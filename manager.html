@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crew Scheduler - Manager Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        /* Password Screen */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .password-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .password-box h2 {
+            color: #2d3436;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .password-box input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .password-box button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .password-box button:hover {
+            transform: scale(1.05);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .container {
+            min-width: 1200px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        h1 {
+            color: #2d3436;
+            font-size: 1.8em;
+        }
+
+        .manager-badge {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .header-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .date-header {
+            color: #636e72;
+            font-size: 1em;
+        }
+
+        .update-time {
+            background: #fff3cd;
+            color: #856404;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 1px solid #ffc107;
+        }
+
+        .sync-status {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .sync-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-sync {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-print {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-add {
+            background: #9c88ff;
+            color: white;
+        }
+
+        .btn-delete-mode {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-delete-mode.active {
+            background: #c92a2a;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .resources-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .resource-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .resource-section h3 {
+            color: #495057;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .resource-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 70px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 2px dashed #dee2e6;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        #outOfServicePool {
+            background: #ffe0e0;
+            border-color: #ff9999;
+        }
+
+        .draggable {
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: move;
+            font-size: 0.8em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .draggable:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .draggable.dragging {
+            opacity: 0.5;
+        }
+
+        .draggable.delete-mode {
+            cursor: pointer;
+        }
+
+        .draggable.delete-mode:hover {
+            background: #ff6b6b !important;
+            color: white !important;
+            transform: scale(0.95);
+        }
+
+        .draggable.delete-mode:hover::after {
+            content: '×';
+            position: absolute;
+            right: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .draggable.out-of-service {
+            opacity: 0.6;
+            background: repeating-linear-gradient(
+                45deg,
+                #ff6b6b,
+                #ff6b6b 5px,
+                #ff9999 5px,
+                #ff9999 10px
+            ) !important;
+            color: white !important;
+        }
+
+        .person {
+            background: #9c88ff;
+            color: white;
+        }
+
+        .crew-leader {
+            background: linear-gradient(135deg, #ffd700, #ffb347);
+            color: #333;
+            font-weight: 700;
+            border: 2px solid #ffa500;
+            padding: 3px 8px;
+        }
+
+        .manager {
+            background: linear-gradient(135deg, #ffc0cb, #ffb6c1);
+            color: #333;
+            font-weight: 600;
+            border: 2px solid #ff91a4;
+            padding: 3px 8px;
+        }
+
+        .truck {
+            background: #00a8ff;
+            color: white;
+        }
+
+        .trailer {
+            background: #fbc531;
+            color: #333;
+        }
+
+        .machine {
+            background: #4cd137;
+            color: white;
+        }
+
+        .job {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .crews-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .crew-card {
+            flex: 0 0 190px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .crew-header {
+            padding: 10px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1em;
+        }
+
+        .crew-1 .crew-header { background: #9c88ff; }
+        .crew-2 .crew-header { background: #00a8ff; }
+        .crew-3 .crew-header { background: #fbc531; }
+        .crew-4 .crew-header { background: #4cd137; }
+        .crew-5 .crew-header { background: #e84393; }
+        .crew-6 .crew-header { background: #00d2d3; }
+
+        .crew-body {
+            padding: 10px;
+        }
+
+        .crew-section {
+            margin-bottom: 10px;
+        }
+
+        .crew-section-title {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .drop-zone {
+            min-height: 35px;
+            padding: 6px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+
+        .drop-zone.drag-over {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        .drop-zone .draggable {
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #2d3436;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 8px 20px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Protection Screen -->
+    <div id="passwordOverlay" class="password-overlay">
+        <div class="password-box">
+            <h2>🔒 Manager Portal</h2>
+            <p style="color: #636e72; margin-bottom: 20px;">Enter password to access scheduler</p>
+            <input type="password" id="passwordInput" placeholder="Enter password" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()">Access Scheduler</button>
+            <div id="errorMessage" class="error-message hidden">Incorrect password. Please try again.</div>
+        </div>
+    </div>
+
+    <!-- Main Scheduler (Hidden until password correct) -->
+    <div id="mainScheduler" class="container hidden">
+        <div class="header">
+            <h1>📋 Daily Crew Schedule <span class="manager-badge">MANAGER</span></h1>
+            <div class="header-info">
+                <div class="date-header" id="currentDate"></div>
+                <div class="update-time" id="updateTime">Last Updated: Never</div>
+                <div class="sync-status" id="syncStatus">⚡ Connected to Google Sheets</div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn-sync" onclick="syncToGoogleSheets()">☁️ Sync Now</button>
+                <button class="btn-add" onclick="showAddModal()">➕ Add Tag</button>
+                <button class="btn-delete-mode" onclick="toggleDeleteMode()">🗑️ Delete Mode</button>
+                <button class="btn-clear" onclick="clearAllCrews()">🔄 Clear</button>
+                <button class="btn-print" onclick="printSchedule()">🖨️ Print</button>
+            </div>
+        </div>
+        
+        <div class="resources-bar">
+            <div class="resource-section">
+                <h3>👥 Available Crew Members</h3>
+                <div class="resource-items" id="peoplePool">
+                    <div class="draggable crew-leader" draggable="true">Jacob</div>
+                    <div class="draggable person" draggable="true">Vern</div>
+                    <div class="draggable person" draggable="true">Andreas</div>
+                    <div class="draggable person" draggable="true">Jaime</div>
+                    <div class="draggable crew-leader" draggable="true">Layne</div>
+                    <div class="draggable person" draggable="true">Daniel</div>
+                    <div class="draggable person" draggable="true">Nathan</div>
+                    <div class="draggable manager" draggable="true">Ben</div>
+                    <div class="draggable person" draggable="true">Juan Manuel</div>
+                    <div class="draggable person" draggable="true">Juan Andreas</div>
+                    <div class="draggable manager" draggable="true">Scott</div>
+                    <div class="draggable person" draggable="true">Zach</div>
+                    <div class="draggable person" draggable="true">Amador</div>
+                    <div class="draggable person" draggable="true">Edgar</div>
+                    <div class="draggable person" draggable="true">Alejandro</div>
+                    <div class="draggable person" draggable="true">Hayden</div>
+                    <div class="draggable crew-leader" draggable="true">Brandon</div>
+                    <div class="draggable person" draggable="true">Tyler</div>
+                    <div class="draggable person" draggable="true">Fredirico</div>
+                    <div class="draggable person" draggable="true">Miguel</div>
+                    <div class="draggable person" draggable="true">Andrew</div>
+                    <div class="draggable person" draggable="true">Lupe</div>
+                    <div class="draggable crew-leader" draggable="true">Jose I</div>    
+                    <div class="draggable manager" draggable="true">Trey</div>
+                    <div class="draggable manager" draggable="true">Ashe</div>
+                    <div class="draggable manager" draggable="true">Dean</div>
+                    <div class="draggable manager" draggable="true">James</div>
+                    <div class="draggable manager" draggable="true">Dove</div>
+                    <div class="draggable crew-leader" draggable="true">Chase</div>
+                    <div class="draggable person" draggable="true">Armando</div>
+                    <div class="draggable crew-leader" draggable="true">Pulo</div>
+                    <div class="draggable crew-leader" draggable="true">Jonathan</div>
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>🚛 Trucks</h3>
+                <div class="resource-items" id="trucksPool">
+                    <div class="draggable truck" draggable="true">305 Power wagon</div>
+                    <div class="draggable truck" draggable="true">306 plow</div>
+                    <div class="draggable truck" draggable="true">307 Short Side</div>
+                    <div class="draggable truck" draggable="true">308 White 350</div>
+                    <div class="draggable truck" draggable="true">309 Power Wagon</div>
+                    <div class="draggable truck" draggable="true">310 Silver 350</div>
+                    <div class="draggable truck" draggable="true">701 Open Bed</div>
+                    <div class="draggable truck" draggable="true">301 Big Metal</div>
+                    <div class="draggable truck" draggable="true">302 Old Girl 7.3</div>
+                    <div class="draggable truck" draggable="true">303 Wood Side</div>
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>🔧 Equipment</h3>
+                <div class="resource-items" id="equipmentPool">
+                    <div class="draggable trailer" draggable="true">SVL 75 Open</div>
+                    <div class="draggable trailer" draggable="true">SVL 75 closed</div>   
+                    <div class="draggable trailer" draggable="true">Dingo 1000</div>
+                    <div class="draggable trailer" draggable="true">Dingo 500</div>
+                    <div class="draggable machine" draggable="true">Hydro Seeder</div>
+                    <div class="draggable machine" draggable="true">S85</div>
+                    <div class="draggable machine" draggable="true">Vermeer</div>
+                    <div class="draggable machine" draggable="true">Deere 319</div>
+                    <div class="draggable machine" draggable="true">Deere 333</div>
+                    <div class="draggable machine" draggable="true">KX 057</div>
+                    <div class="draggable machine" draggable="true">KX 040</div>
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>📍 Job Names</h3>
+                <div class="resource-items" id="jobsPool">
+                    <div class="draggable job" draggable="true">Williams Install</div>
+                    <div class="draggable job" draggable="true">Nathan Project</div>
+                    <div class="draggable job" draggable="true">Flat Creek</div>
+                    <div class="draggable job" draggable="true">Gibley Site</div>
+                    <div class="draggable job" draggable="true">Ross Property</div>
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>🚫 Absent Today</h3>
+                <div class="resource-items drop-zone" id="absentPool"></div>
+            </div>
+
+            <div class="resource-section">
+                <h3>⚠️ Out of Service</h3>
+                <div class="resource-items drop-zone" id="outOfServicePool"></div>
+            </div>
+        </div>
+
+        <div class="crews-container" id="crewsContainer">
+            <!-- Crews will be generated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Add Tag Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <h2 class="modal-header">Add New Tag</h2>
+            <div class="form-group">
+                <label for="tagName">Name:</label>
+                <input type="text" id="tagName" placeholder="Enter name...">
+            </div>
+            <div class="form-group">
+                <label for="tagType">Type:</label>
+                <select id="tagType" onchange="checkPersonType()">
+                    <option value="person">Crew Member</option>
+                    <option value="crew-leader">Crew Leader</option>
+                    <option value="manager">Manager/Salesman</option>
+                    <option value="truck">Truck</option>
+                    <option value="equipment">Equipment</option>
+                    <option value="job">Job Name</option>
+                </select>
+            </div>
+            <div class="form-group" id="equipmentSubtype" style="display: none;">
+                <label for="equipmentType">Equipment Type:</label>
+                <select id="equipmentType">
+                    <option value="trailer">Trailer</option>
+                    <option value="machine">Machine</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeAddModal()" style="background: #6c757d; color: white;">Cancel</button>
+                <button onclick="addNewTag()" style="background: #4CAF50; color: white;">Add Tag</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration
+        const SHEET_ID = '1y89_Bq4O_bG_MKn3E9ZnJ4jngn9puDHrNKWcuOLpgN4';
+        const API_KEY = 'AIzaSyA9mJz1wSY6GBalGuiEGzE2aLPv0x7qelQ'; // Public API key for demo
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxAPsvWz66XXwjK0N9GAwlIq7h2DK4RCM8ei1-NEoNip_2DG2bAKKavb9z3TF_KWng/exec'; // For writing
+        const SHEET_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A:L?key=${API_KEY}`; // For reading
+        let deleteMode = false;
+
+        // Password Protection
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === '5203') {
+                document.getElementById('passwordOverlay').classList.add('hidden');
+                document.getElementById('mainScheduler').classList.remove('hidden');
+                initializeScheduler();
+            } else {
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        function initializeScheduler() {
+            loadFromGoogleSheets();
+            setInterval(syncToGoogleSheets, 60000); // Auto-sync every minute
+        }
+
+        // Google Sheets Functions
+        async function syncToGoogleSheets() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.textContent = '⏳ Syncing...';
+            syncStatus.classList.remove('error');
+            
+            try {
+                const scheduleData = collectScheduleData();
+                await saveToGoogleSheets(scheduleData);
+                syncStatus.textContent = '✅ Synced to Google Sheets';
+                updateLastModifiedTime();
+            } catch (error) {
+                console.error('Sync error:', error);
+                syncStatus.textContent = '❌ Sync failed - check connection';
+                syncStatus.classList.add('error');
+            }
+        }
+
+        async function saveToGoogleSheets(data) {
+            const values = [];
+            const today = new Date().toLocaleDateString();
+            
+            // Add header row if needed
+            values.push(['Date', 'Crew_Number', 'Team_Members', 'Crew_Leaders', 'Managers', 'Truck', 'Equipment', 'Job_Name', 'Salesman_PM', 'Last_Updated', 'Absent_Today', 'Out_Of_Service']);
+            
+            // Add data for each crew
+            data.crews.forEach(crew => {
+                const members = crew.members.filter(m => !m.isLeader && !m.isManager).map(m => m.name).join(', ');
+                const leaders = crew.members.filter(m => m.isLeader).map(m => m.name).join(', ');
+                const managers = crew.members.filter(m => m.isManager).map(m => m.name).join(', ');
+                
+                values.push([
+                    today,
+                    crew.number,
+                    members,
+                    leaders,
+                    managers,
+                    crew.vehicles.join(', '),
+                    crew.equipment.join(', '),
+                    crew.jobs.join(', '),
+                    crew.salesman,
+                    new Date().toLocaleString(),
+                    '', // Absent filled in separate row
+                    ''  // Out of service filled in separate row
+                ]);
+            });
+            
+            // Add absent and out of service data
+            const absent = data.absent.map(a => a.name).join(', ');
+            const outOfService = data.outOfService.map(o => o.name).join(', ');
+            values.push([today, 'SUMMARY', '', '', '', '', '', '', '', new Date().toLocaleString(), absent, outOfService]);
+            
+             // Use batchUpdate instead of PUT for authentication
+             const response = await fetch(`https://script.google.com/macros/s/AKfycbxAPsvWz66XXwjK0N9GAwlIq7h2DK4RCM8ei1-NEoNip_2DG2bAKKavb9z3TF_KWng/exec`, {
+             method: 'POST',
+             headers: {
+            'Content-Type': 'text/plain',
+             },
+             body: JSON.stringify({values: values})
+  });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        console.error('API Error:', error);
+        throw new Error('Failed to save to Google Sheets');
+    }
+        }
+
+        async function loadFromGoogleSheets() {
+            try {
+                const response = await fetch(`${SHEET_URL}?key=${API_KEY}`);
+                const data = await response.json();
+                
+                if (data.values && data.values.length > 1) {
+                    // Parse and load the data
+                    const lastRow = data.values[data.values.length - 1];
+                    if (lastRow[9]) { // Last updated time
+                        document.getElementById('updateTime').textContent = `Last Updated: ${lastRow[9]}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        }
+
+        function collectScheduleData() {
+            const schedule = {
+                date: new Date().toISOString(),
+                lastUpdate: new Date().toLocaleString(),
+                crews: [],
+                absent: [],
+                outOfService: []
+            };
+
+            const numCrews = document.querySelectorAll('.crew-card').length;
+            for (let i = 1; i <= numCrews; i++) {
+                const crew = {
+                    number: i,
+                    members: [],
+                    vehicles: [],
+                    equipment: [],
+                    jobs: [],
+                    salesman: ''
+                };
+
+                // Get team members
+                const peopleZone = document.querySelector(`[data-crew="${i}"][data-type="people"]`);
+                if (peopleZone) {
+                    crew.members = Array.from(peopleZone.children).map(el => ({
+                        name: el.textContent,
+                        isLeader: el.classList.contains('crew-leader'),
+                        isManager: el.classList.contains('manager')
+                    }));
+                }
+
+                // Get vehicles
+                const trucksZone = document.querySelector(`[data-crew="${i}"][data-type="trucks"]`);
+                if (trucksZone) {
+                    crew.vehicles = Array.from(trucksZone.children).map(el => el.textContent);
+                }
+
+                // Get equipment
+                const equipmentZone = document.querySelector(`[data-crew="${i}"][data-type="equipment"]`);
+                if (equipmentZone) {
+                    crew.equipment = Array.from(equipmentZone.children).map(el => el.textContent);
+                }
+
+                // Get jobs
+                const jobsZone = document.querySelector(`[data-crew="${i}"][data-type="jobs"]`);
+                if (jobsZone) {
+                    crew.jobs = Array.from(jobsZone.children).map(el => el.textContent);
+                }
+
+                // Get salesman/project manager
+                const salesmanInput = document.querySelector(`input[data-crew="${i}"].salesman-input`);
+                if (salesmanInput) {
+                    crew.salesman = salesmanInput.value;
+                }
+
+                schedule.crews.push(crew);
+            }
+
+            // Get absent people
+            const absentZone = document.getElementById('absentPool');
+            schedule.absent = Array.from(absentZone.children).map(el => ({
+                name: el.textContent,
+                isLeader: el.classList.contains('crew-leader'),
+                isManager: el.classList.contains('manager')
+            }));
+
+            // Get out of service items
+            document.querySelectorAll('#outOfServicePool .draggable').forEach(el => {
+                schedule.outOfService.push({
+                    name: el.textContent,
+                    type: el.classList.contains('truck') ? 'truck' : 
+                          el.classList.contains('trailer') ? 'trailer' : 'machine'
+                });
+            });
+
+            return schedule;
+        }
+
+        // Initialize date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+
+        // Update time functions
+        function updateLastModifiedTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', { 
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('updateTime').textContent = `Last Updated: ${timeString}`;
+        }
+
+        // Create crew cards
+        const crewsContainer = document.getElementById('crewsContainer');
+        for (let i = 1; i <= 8; i++) {
+            const crewCard = document.createElement('div');
+            crewCard.className = `crew-card crew-${i > 6 ? i - 6 : i}`;
+            crewCard.innerHTML = `
+                <div class="crew-header">Crew ${i}</div>
+                <div class="crew-body">
+                    <div class="crew-section">
+                        <div class="crew-section-title">Team (Drop here)</div>
+                        <div class="drop-zone" data-crew="${i}" data-type="people"></div>
+                    </div>
+                    <div class="crew-section">
+                        <div class="crew-section-title">Truck</div>
+                        <div class="drop-zone" data-crew="${i}" data-type="trucks"></div>
+                    </div>
+                    <div class="crew-section">
+                        <div class="crew-section-title">Equipment</div>
+                        <div class="drop-zone" data-crew="${i}" data-type="equipment"></div>
+                    </div>
+                    <div class="crew-section">
+                        <div class="crew-section-title">Job Name</div>
+                        <div class="drop-zone" data-crew="${i}" data-type="jobs"></div>
+                    </div>
+                    <div class="crew-section">
+                        <div class="crew-section-title">Salesman/Project Manager</div>
+                        <input type="text" class="input-field salesman-input" placeholder="Enter name..." data-crew="${i}" onchange="syncToGoogleSheets()">
+                    </div>
+                </div>
+            `;
+            crewsContainer.appendChild(crewCard);
+        }
+
+        // Modal functions
+        function showAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.getElementById('tagName').value = '';
+            document.getElementById('tagType').selectedIndex = 0;
+            document.getElementById('equipmentSubtype').style.display = 'none';
+        }
+
+        function checkPersonType() {
+            const tagType = document.getElementById('tagType').value;
+            const equipmentSubtype = document.getElementById('equipmentSubtype');
+            
+            if (tagType === 'equipment') {
+                equipmentSubtype.style.display = 'block';
+            } else {
+                equipmentSubtype.style.display = 'none';
+            }
+        }
+
+        function addNewTag() {
+            const name = document.getElementById('tagName').value.trim();
+            const type = document.getElementById('tagType').value;
+            
+            if (!name) {
+                alert('Please enter a name for the tag');
+                return;
+            }
+
+            const newTag = document.createElement('div');
+            newTag.className = 'draggable';
+            newTag.draggable = true;
+            newTag.textContent = name;
+
+            // Set the appropriate class based on type
+            switch(type) {
+                case 'person':
+                    newTag.classList.add('person');
+                    document.getElementById('peoplePool').appendChild(newTag);
+                    break;
+                case 'crew-leader':
+                    newTag.classList.add('crew-leader');
+                    document.getElementById('peoplePool').appendChild(newTag);
+                    break;
+                case 'manager':
+                    newTag.classList.add('manager');
+                    document.getElementById('peoplePool').appendChild(newTag);
+                    break;
+                case 'truck':
+                    newTag.classList.add('truck');
+                    document.getElementById('trucksPool').appendChild(newTag);
+                    break;
+                case 'equipment':
+                    const equipType = document.getElementById('equipmentType').value;
+                    newTag.classList.add(equipType);
+                    document.getElementById('equipmentPool').appendChild(newTag);
+                    break;
+                case 'job':
+                    newTag.classList.add('job');
+                    document.getElementById('jobsPool').appendChild(newTag);
+                    break;
+            }
+
+            setupDraggableEvents(newTag);
+            closeAddModal();
+            syncToGoogleSheets();
+        }
+
+        // Delete mode
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            const btn = document.querySelector('.btn-delete-mode');
+            const allDraggables = document.querySelectorAll('.draggable');
+            
+            if (deleteMode) {
+                btn.classList.add('active');
+                btn.textContent = '🚫 Cancel Delete';
+                allDraggables.forEach(item => {
+                    item.classList.add('delete-mode');
+                    item.draggable = false;
+                });
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🗑️ Delete Mode';
+                allDraggables.forEach(item => {
+                    item.classList.remove('delete-mode');
+                    item.draggable = true;
+                });
+            }
+        }
+
+        // Setup draggable events
+        function setupDraggableEvents(element) {
+            element.addEventListener('dragstart', handleDragStart);
+            element.addEventListener('dragend', handleDragEnd);
+            element.addEventListener('click', handleDeleteClick);
+        }
+
+        // Drag and drop functionality
+        let draggedElement = null;
+        let draggedFromOutOfService = false;
+
+        function handleDragStart(e) {
+            if (!deleteMode && e.target.classList.contains('draggable')) {
+                draggedElement = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
+            }
+        }
+
+        function handleDragEnd(e) {
+            if (e.target.classList.contains('draggable')) {
+                e.target.classList.remove('dragging');
+                syncToGoogleSheets();
+            }
+        }
+
+        function handleDeleteClick(e) {
+            if (deleteMode && e.target.classList.contains('draggable')) {
+                if (confirm(`Delete "${e.target.textContent}"?`)) {
+                    e.target.remove();
+                    syncToGoogleSheets();
+                }
+            }
+        }
+
+        // Set up initial event listeners
+        document.querySelectorAll('.draggable').forEach(element => {
+            setupDraggableEvents(element);
+        });
+
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!deleteMode) {
+                e.dataTransfer.dropEffect = 'move';
+            }
+        });
+
+        document.addEventListener('dragenter', (e) => {
+            if (!deleteMode && (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items'))) {
+                e.target.classList.add('drag-over');
+            }
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                e.target.classList.remove('drag-over');
+            }
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (deleteMode) return;
+            
+            let dropZone = e.target;
+            
+            if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
+            }
+            
+            if (dropZone && draggedElement) {
+                dropZone.classList.remove('drag-over');
+                
+                // Check if moving from Out of Service to active pool
+                if (draggedFromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
+                    const itemName = draggedElement.textContent;
+                    const itemType = draggedElement.classList.contains('truck') ? 'truck' : 'equipment';
+                    
+                    if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
+                        draggedFromOutOfService = false;
+                        return;
+                    }
+                }
+                
+                const zoneType = dropZone.dataset.type;
+                if (zoneType) {
+                    const itemType = (draggedElement.classList.contains('person') || draggedElement.classList.contains('crew-leader') || draggedElement.classList.contains('manager')) ? 'people' :
+                                   draggedElement.classList.contains('truck') ? 'trucks' :
+                                   draggedElement.classList.contains('trailer') || draggedElement.classList.contains('machine') ? 'equipment' :
+                                   draggedElement.classList.contains('job') ? 'jobs' : null;
+                    
+                    if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
+                        draggedFromOutOfService = false;
+                        return;
+                    }
+                }
+                
+                if (dropZone.id === 'outOfServicePool') {
+                    draggedElement.classList.add('out-of-service');
+                } else {
+                    draggedElement.classList.remove('out-of-service');
+                }
+                
+                dropZone.appendChild(draggedElement);
+                draggedFromOutOfService = false;
+            }
+        });
+
+        function clearAllCrews() {
+            if (confirm('Clear all crew assignments?')) {
+                document.querySelectorAll('.drop-zone .draggable').forEach(item => {
+                    if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
+                        document.getElementById('peoplePool').appendChild(item);
+                    } else if (item.classList.contains('truck')) {
+                        item.classList.remove('out-of-service');
+                        document.getElementById('trucksPool').appendChild(item);
+                    } else if (item.classList.contains('trailer') || item.classList.contains('machine')) {
+                        item.classList.remove('out-of-service');
+                        document.getElementById('equipmentPool').appendChild(item);
+                    } else if (item.classList.contains('job')) {
+                        document.getElementById('jobsPool').appendChild(item);
+                    }
+                });
+                
+                document.querySelectorAll('.salesman-input').forEach(input => {
+                    input.value = '';
+                });
+                
+                const absentItems = document.getElementById('absentPool').querySelectorAll('.draggable');
+                absentItems.forEach(item => {
+                    if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
+                        document.getElementById('peoplePool').appendChild(item);
+                    }
+                });
+
+                syncToGoogleSheets();
+            }
+        }
+
+        function printSchedule() {
+            window.print();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addModal');
+            if (event.target == modal) {
+                closeAddModal();
+            }
+        }
+    </script>
+</body>
+</html>

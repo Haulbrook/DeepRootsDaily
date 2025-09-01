@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Crew Schedule - View Only</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .container {
+            min-width: 1200px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        h1 {
+            color: #2d3436;
+            font-size: 1.8em;
+        }
+
+        .view-only-badge {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .header-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .date-header {
+            color: #636e72;
+            font-size: 1em;
+        }
+
+        .update-time {
+            background: #fff3cd;
+            color: #856404;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 1px solid #ffc107;
+        }
+
+        .sync-status {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .sync-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-refresh {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-print {
+            background: #2196F3;
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .resources-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .resource-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .resource-section h3 {
+            color: #495057;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .resource-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 70px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 2px dashed #dee2e6;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        #outOfServicePool {
+            background: #ffe0e0;
+            border-color: #ff9999;
+        }
+
+        .tag {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: 500;
+            white-space: nowrap;
+            cursor: default;
+            display: inline-block;
+        }
+
+        .out-of-service {
+            opacity: 0.6;
+            background: repeating-linear-gradient(
+                45deg,
+                #ff6b6b,
+                #ff6b6b 5px,
+                #ff9999 5px,
+                #ff9999 10px
+            ) !important;
+            color: white !important;
+        }
+
+        .person {
+            background: #9c88ff;
+            color: white;
+        }
+
+        .crew-leader {
+            background: linear-gradient(135deg, #ffd700, #ffb347);
+            color: #333;
+            font-weight: 700;
+            border: 2px solid #ffa500;
+            padding: 3px 8px;
+        }
+
+        .manager {
+            background: linear-gradient(135deg, #ffc0cb, #ffb6c1);
+            color: #333;
+            font-weight: 600;
+            border: 2px solid #ff91a4;
+            padding: 3px 8px;
+        }
+
+        .truck {
+            background: #00a8ff;
+            color: white;
+        }
+
+        .trailer {
+            background: #fbc531;
+            color: #333;
+        }
+
+        .machine {
+            background: #4cd137;
+            color: white;
+        }
+
+        .job {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .crews-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .crew-card {
+            flex: 0 0 190px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .crew-header {
+            padding: 10px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1em;
+        }
+
+        .crew-1 .crew-header { background: #9c88ff; }
+        .crew-2 .crew-header { background: #00a8ff; }
+        .crew-3 .crew-header { background: #fbc531; }
+        .crew-4 .crew-header { background: #4cd137; }
+        .crew-5 .crew-header { background: #e84393; }
+        .crew-6 .crew-header { background: #00d2d3; }
+
+        .crew-body {
+            padding: 10px;
+        }
+
+        .crew-section {
+            margin-bottom: 10px;
+        }
+
+        .crew-section-title {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .drop-zone {
+            min-height: 35px;
+            padding: 6px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+
+        .drop-zone .tag {
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .input-field-display {
+            width: 100%;
+            padding: 5px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 0.8em;
+            min-height: 28px;
+            color: #495057;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Scrollbar styling */
+        .resource-items::-webkit-scrollbar,
+        .crews-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .resource-items::-webkit-scrollbar-track,
+        .crews-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .resource-items::-webkit-scrollbar-thumb,
+        .crews-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .resource-items::-webkit-scrollbar-thumb:hover,
+        .crews-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .action-buttons {
+                display: none;
+            }
+            .crews-container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+            .crew-card {
+                flex: unset;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Loading Schedule...</h2>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="container hidden">
+        <div class="header">
+            <h1>📋 Daily Crew Schedule <span class="view-only-badge">VIEW ONLY</span></h1>
+            <div class="header-info">
+                <div class="date-header" id="currentDate"></div>
+                <div class="update-time" id="updateTime">Last Updated: Never</div>
+                <div class="sync-status" id="syncStatus">📊 Read-Only Mode</div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn-refresh" onclick="refreshSchedule()">🔄 Refresh</button>
+                <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message hidden">
+            Unable to load schedule. Please try again later.
+        </div>
+        
+        <div class="resources-bar">
+            <div class="resource-section">
+                <h3>👥 Available Crew Members</h3>
+                <div class="resource-items" id="peoplePool">
+                    <!-- Will be populated from Google Sheets -->
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>🚛 Trucks</h3>
+                <div class="resource-items" id="trucksPool">
+                    <!-- Will be populated from Google Sheets -->
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>🔧 Equipment</h3>
+                <div class="resource-items" id="equipmentPool">
+                    <!-- Will be populated from Google Sheets -->
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>📍 Job Names</h3>
+                <div class="resource-items" id="jobsPool">
+                    <!-- Will be populated from Google Sheets -->
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>🚫 Absent Today</h3>
+                <div class="resource-items" id="absentPool">
+                    <!-- Will be populated from Google Sheets -->
+                </div>
+            </div>
+
+            <div class="resource-section">
+                <h3>⚠️ Out of Service</h3>
+                <div class="resource-items" id="outOfServicePool">
+                    <!-- Will be populated from Google Sheets -->
+                </div>
+            </div>
+        </div>
+
+        <div class="crews-container" id="crewsContainer">
+            <!-- Crews will be generated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration - READ ONLY
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxAPsvWz66XXwjK0N9GAwlIq7h2DK4RCM8ei1-NEoNip_2DG2bAKKavb9z3TF_KWng/exec'; // For writing
+        
+        // Initialize
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+
+        // Create crew cards structure
+        function createCrewCards() {
+            const crewsContainer = document.getElementById('crewsContainer');
+            crewsContainer.innerHTML = '';
+            
+            for (let i = 1; i <= 8; i++) {
+                const crewCard = document.createElement('div');
+                crewCard.className = `crew-card crew-${i > 6 ? i - 6 : i}`;
+                crewCard.innerHTML = `
+                    <div class="crew-header">Crew ${i}</div>
+                    <div class="crew-body">
+                        <div class="crew-section">
+                            <div class="crew-section-title">Team</div>
+                            <div class="drop-zone" id="crew-${i}-people"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Truck</div>
+                            <div class="drop-zone" id="crew-${i}-trucks"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Equipment</div>
+                            <div class="drop-zone" id="crew-${i}-equipment"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Job Name</div>
+                            <div class="drop-zone" id="crew-${i}-jobs"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Salesman/Project Manager</div>
+                            <div class="input-field-display" id="crew-${i}-salesman"></div>
+                        </div>
+                    </div>
+                `;
+                crewsContainer.appendChild(crewCard);
+            }
+        }
+
+        // Load and display schedule
+        async function loadSchedule() {
+            const errorMessage = document.getElementById('errorMessage');
+            const syncStatus = document.getElementById('syncStatus');
+            
+            try {
+                const response = await fetch(WEBHOOK_URL);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load schedule');
+                }
+
+                const data = await response.json();
+                
+                if (!data.values || data.values.length < 2) {
+                    throw new Error('No schedule data available');
+                }
+
+                displaySchedule(data.values);
+                errorMessage.classList.add('hidden');
+                syncStatus.textContent = '✅ Connected';
+                syncStatus.classList.remove('error');
+                
+            } catch (error) {
+                console.error('Error loading schedule:', error);
+                errorMessage.classList.remove('hidden');
+                syncStatus.textContent = '❌ Connection failed';
+                syncStatus.classList.add('error');
+            }
+        }
+
+        function displaySchedule(data) {
+            const headers = data[0];
+            
+            // Clear all pools first
+            document.getElementById('peoplePool').innerHTML = '';
+            document.getElementById('trucksPool').innerHTML = '';
+            document.getElementById('equipmentPool').innerHTML = '';
+            document.getElementById('jobsPool').innerHTML = '';
+            document.getElementById('absentPool').innerHTML = '';
+            document.getElementById('outOfServicePool').innerHTML = '';
+            
+            // Clear all crew zones
+            for (let i = 1; i <= 8; i++) {
+                document.getElementById(`crew-${i}-people`).innerHTML = '';
+                document.getElementById(`crew-${i}-trucks`).innerHTML = '';
+                document.getElementById(`crew-${i}-equipment`).innerHTML = '';
+                document.getElementById(`crew-${i}-jobs`).innerHTML = '';
+                document.getElementById(`crew-${i}-salesman`).textContent = '';
+            }
+
+            // Find column indices
+            const cols = {
+                date: headers.indexOf('Date'),
+                crew: headers.indexOf('Crew_Number'),
+                members: headers.indexOf('Team_Members'),
+                leaders: headers.indexOf('Crew_Leaders'),
+                managers: headers.indexOf('Managers'),
+                truck: headers.indexOf('Truck'),
+                equipment: headers.indexOf('Equipment'),
+                job: headers.indexOf('Job_Name'),
+                salesman: headers.indexOf('Salesman_PM'),
+                updated: headers.indexOf('Last_Updated'),
+                absent: headers.indexOf('Absent_Today'),
+                outOfService: headers.indexOf('Out_Of_Service')
+            };
+
+            let lastUpdate = '';
+            let processedPeople = new Set();
+            let processedTrucks = new Set();
+            let processedEquipment = new Set();
+            let processedJobs = new Set();
+
+            // Process each row
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                
+                if (row[cols.crew] === 'SUMMARY') {
+                    // Process summary row
+                    lastUpdate = row[cols.updated] || '';
+                    
+                    // Process absent people
+                    const absentList = (row[cols.absent] || '').split(',').filter(a => a.trim());
+                    absentList.forEach(person => {
+                        const tag = createTag(person.trim(), 'person');
+                        document.getElementById('absentPool').appendChild(tag);
+                        processedPeople.add(person.trim());
+                    });
+                    
+                    // Process out of service items
+                    const outOfServiceList = (row[cols.outOfService] || '').split(',').filter(o => o.trim());
+                    outOfServiceList.forEach(item => {
+                        const itemName = item.trim();
+                        const tag = createTag(itemName, guessItemType(itemName));
+                        tag.classList.add('out-of-service');
+                        document.getElementById('outOfServicePool').appendChild(tag);
+                        if (itemName.includes('30') || itemName.includes('wagon')) {
+                            processedTrucks.add(itemName);
+                        } else {
+                            processedEquipment.add(itemName);
+                        }
+                    });
+                    
+                    continue;
+                }
+
+                const crewNum = row[cols.crew];
+                if (!crewNum || crewNum === '') continue;
+
+                // Process crew members
+                const members = (row[cols.members] || '').split(',').filter(m => m.trim());
+                const leaders = (row[cols.leaders] || '').split(',').filter(l => l.trim());
+                const managers = (row[cols.managers] || '').split(',').filter(m => m.trim());
+                
+                // Add to crew
+                leaders.forEach(leader => {
+                    const tag = createTag(leader.trim(), 'crew-leader');
+                    document.getElementById(`crew-${crewNum}-people`).appendChild(tag);
+                    processedPeople.add(leader.trim());
+                });
+                
+                managers.forEach(manager => {
+                    const tag = createTag(manager.trim(), 'manager');
+                    document.getElementById(`crew-${crewNum}-people`).appendChild(tag);
+                    processedPeople.add(manager.trim());
+                });
+                
+                members.forEach(member => {
+                    const tag = createTag(member.trim(), 'person');
+                    document.getElementById(`crew-${crewNum}-people`).appendChild(tag);
+                    processedPeople.add(member.trim());
+                });
+
+                // Process trucks
+                const trucks = (row[cols.truck] || '').split(',').filter(t => t.trim());
+                trucks.forEach(truck => {
+                    const tag = createTag(truck.trim(), 'truck');
+                    document.getElementById(`crew-${crewNum}-trucks`).appendChild(tag);
+                    processedTrucks.add(truck.trim());
+                });
+
+                // Process equipment
+                const equipment = (row[cols.equipment] || '').split(',').filter(e => e.trim());
+                equipment.forEach(item => {
+                    const tag = createTag(item.trim(), guessEquipmentType(item.trim()));
+                    document.getElementById(`crew-${crewNum}-equipment`).appendChild(tag);
+                    processedEquipment.add(item.trim());
+                });
+
+                // Process jobs
+                const jobs = (row[cols.job] || '').split(',').filter(j => j.trim());
+                jobs.forEach(job => {
+                    const tag = createTag(job.trim(), 'job');
+                    document.getElementById(`crew-${crewNum}-jobs`).appendChild(tag);
+                    processedJobs.add(job.trim());
+                });
+
+                // Process salesman
+                const salesman = row[cols.salesman] || '';
+                if (salesman) {
+                    document.getElementById(`crew-${crewNum}-salesman`).textContent = salesman;
+                }
+
+                // Update last update time
+                if (row[cols.updated]) {
+                    lastUpdate = row[cols.updated];
+                }
+            }
+
+            // Add unassigned items to pools (based on default list)
+            const allPeople = ['Jacob', 'Vern', 'Andreas', 'Jaime', 'Layne', 'Daniel', 'Nathan', 'Ben', 
+                              'Juan Manuel', 'Juan Andreas', 'Scott', 'Zach', 'Amador', 'Edgar', 
+                              'Alejandro', 'Hayden', 'Brandon', 'Tyler', 'Fredirico', 'Miguel', 
+                              'Andrew', 'Lupe', 'Jose I', 'Trey', 'Ashe', 'Dean', 'James', 'Dove', 
+                              'Chase', 'Armando', 'Pulo', 'Jonathan'];
+            
+            const allTrucks = ['305 Power wagon', '306 plow', '307 Short Side', '308 White 350', 
+                              '309 Power Wagon', '310 Silver 350', '701 Open Bed', '301 Big Metal', 
+                              '302 Old Girl 7.3', '303 Wood Side'];
+            
+            const allEquipment = ['SVL 75 Open', 'SVL 75 closed', 'Dingo 1000', 'Dingo 500', 
+                                 'Hydro Seeder', 'S85', 'Vermeer', 'Deere 319', 'Deere 333', 
+                                 'KX 057', 'KX 040'];
+            
+            const allJobs = ['Williams Install', 'Nathan Project', 'Flat Creek', 'Gibley Site', 'Ross Property'];
+
+            // Add unassigned people
+            allPeople.forEach(person => {
+                if (!processedPeople.has(person)) {
+                    const type = ['Jacob', 'Layne', 'Pulo', 'Brandon', 'Chase', 'Jonathan', 'Jose I'].includes(person) ? 'crew-leader' :
+                                ['Ben', 'Scott', 'Trey', 'Ashe', 'Dean', 'James', 'Dove'].includes(person) ? 'manager' : 'person';
+                    const tag = createTag(person, type);
+                    document.getElementById('peoplePool').appendChild(tag);
+                }
+            });
+
+            // Add unassigned trucks
+            allTrucks.forEach(truck => {
+                if (!processedTrucks.has(truck)) {
+                    const tag = createTag(truck, 'truck');
+                    document.getElementById('trucksPool').appendChild(tag);
+                }
+            });
+
+            // Add unassigned equipment
+            allEquipment.forEach(item => {
+                if (!processedEquipment.has(item)) {
+                    const tag = createTag(item, guessEquipmentType(item));
+                    document.getElementById('equipmentPool').appendChild(tag);
+                }
+            });
+
+            // Add unassigned jobs
+            allJobs.forEach(job => {
+                if (!processedJobs.has(job)) {
+                    const tag = createTag(job, 'job');
+                    document.getElementById('jobsPool').appendChild(tag);
+                }
+            });
+
+            // Update last update time
+            if (lastUpdate) {
+                document.getElementById('updateTime').textContent = `Last Updated: ${lastUpdate}`;
+            }
+        }
+
+        function createTag(text, type) {
+            const tag = document.createElement('div');
+            tag.className = `tag ${type}`;
+            tag.textContent = text;
+            return tag;
+        }
+
+        function guessItemType(item) {
+            if (item.includes('30') || item.includes('wagon') || item.includes('plow')) {
+                return 'truck';
+            }
+            return guessEquipmentType(item);
+        }
+
+        function guessEquipmentType(item) {
+            if (item.includes('SVL') || item.includes('Dingo') || item.includes('Trailer')) {
+                return 'trailer';
+            }
+            return 'machine';
+        }
+
+        function refreshSchedule() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.textContent = '⏳ Refreshing...';
+            loadSchedule();
+        }
+
+        // Initial load
+        createCrewCards();
+        
+        // Load schedule when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                loadSchedule();
+            }, 500);
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadSchedule, 30000);
+    </script>
+</body>
+</html>

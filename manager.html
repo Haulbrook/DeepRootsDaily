@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Crew Scheduler - Manager Portal</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -16,6 +17,9 @@
             background: #f0f2f5;
             padding: 10px;
             overflow-x: auto;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         /* Password Screen */
@@ -39,6 +43,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
             max-width: 400px;
+            width: 90%;
         }
 
         .password-box h2 {
@@ -98,6 +103,8 @@
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         h1 {
@@ -153,6 +160,7 @@
         .action-buttons {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         button {
@@ -163,6 +171,7 @@
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
+            touch-action: manipulation;
         }
 
         .btn-save {
@@ -245,6 +254,7 @@
             border: 2px dashed #dee2e6;
             max-height: 120px;
             overflow-y: auto;
+            position: relative;
         }
 
         #outOfServicePool {
@@ -261,6 +271,7 @@
             transition: all 0.2s ease;
             white-space: nowrap;
             position: relative;
+            touch-action: none;
         }
 
         .draggable:hover {
@@ -270,6 +281,7 @@
 
         .draggable.dragging {
             opacity: 0.5;
+            z-index: 1000;
         }
 
         .draggable.delete-mode {
@@ -397,6 +409,7 @@
             border: 2px dashed #dee2e6;
             border-radius: 5px;
             font-size: 0.8em;
+            position: relative;
         }
 
         .drop-zone.drag-over {
@@ -439,7 +452,8 @@
             margin: 10% auto;
             padding: 20px;
             border-radius: 10px;
-            width: 400px;
+            width: 90%;
+            max-width: 400px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
 
@@ -497,6 +511,95 @@
 
         .close:hover {
             color: #000;
+        }
+
+        /* Scrollbar styling */
+        .resource-items::-webkit-scrollbar,
+        .crews-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .resource-items::-webkit-scrollbar-track,
+        .crews-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .resource-items::-webkit-scrollbar-thumb,
+        .crews-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .resource-items::-webkit-scrollbar-thumb:hover,
+        .crews-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                min-width: 100%;
+                padding: 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+
+            .resources-bar {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .crews-container {
+                flex-direction: column;
+            }
+
+            .crew-card {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+
+            .draggable {
+                padding: 10px 15px;
+                font-size: 1em;
+                margin: 4px;
+            }
+
+            .drop-zone {
+                min-height: 50px;
+                padding: 10px;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .resources-bar, .action-buttons {
+                display: none;
+            }
+            .crews-container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+            .crew-card {
+                flex: unset;
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
@@ -664,14 +767,16 @@
     </div>
 
     <script>
-        // Google Sheets Configuration
-        const SHEET_ID = '1y89_Bq4O_bG_MKn3E9ZnJ4jngn9puDHrNKWcuOLpgN4';
-        const API_KEY = 'AIzaSyA9mJz1wSY6GBalGuiEGzE2aLPv0x7qelQ'; // Public API key for demo
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwV8EIR7jPTZn0bZ7Jgv3Pj-sn13q_Nz4kueZ9pppX_PGZrRbYjieUfkZWA41WLD2c/exec'; // For writing
-        const SHEET_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A:L?key=${API_KEY}`; // For reading
+        // ============ CONFIGURATION ============
+        // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        const WEBHOOK_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+        
         let deleteMode = false;
+        let touchItem = null;
+        let draggedElement = null;
+        let draggedFromOutOfService = false;
 
-        // Password Protection
+        // ============ PASSWORD PROTECTION ============
         function checkPassword() {
             const password = document.getElementById('passwordInput').value;
             if (password === '5203') {
@@ -689,7 +794,7 @@
             setInterval(syncToGoogleSheets, 60000); // Auto-sync every minute
         }
 
-        // Google Sheets Functions
+        // ============ GOOGLE SHEETS FUNCTIONS ============
         async function syncToGoogleSheets() {
             const syncStatus = document.getElementById('syncStatus');
             syncStatus.textContent = '⏳ Syncing...';
@@ -711,10 +816,8 @@
             const values = [];
             const today = new Date().toLocaleDateString();
             
-            // Add header row if needed
             values.push(['Date', 'Crew_Number', 'Team_Members', 'Crew_Leaders', 'Managers', 'Truck', 'Equipment', 'Job_Name', 'Salesman_PM', 'Last_Updated', 'Absent_Today', 'Out_Of_Service']);
             
-            // Add data for each crew
             data.crews.forEach(crew => {
                 const members = crew.members.filter(m => !m.isLeader && !m.isManager).map(m => m.name).join(', ');
                 const leaders = crew.members.filter(m => m.isLeader).map(m => m.name).join(', ');
@@ -731,41 +834,33 @@
                     crew.jobs.join(', '),
                     crew.salesman,
                     new Date().toLocaleString(),
-                    '', // Absent filled in separate row
-                    ''  // Out of service filled in separate row
+                    '',
+                    ''
                 ]);
             });
             
-            // Add absent and out of service data
             const absent = data.absent.map(a => a.name).join(', ');
             const outOfService = data.outOfService.map(o => o.name).join(', ');
             values.push([today, 'SUMMARY', '', '', '', '', '', '', '', new Date().toLocaleString(), absent, outOfService]);
             
-             // Use batchUpdate instead of PUT for authentication
-             const response = await fetch(`https://script.google.com/macros/s/AKfycbxAPsvWz66XXwjK0N9GAwlIq7h2DK4RCM8ei1-NEoNip_2DG2bAKKavb9z3TF_KWng/exec`, {
-             method: 'POST',
-             headers: {
-            'Content-Type': 'text/plain',
-             },
-             body: JSON.stringify({values: values})
-  });
-    
-    if (!response.ok) {
-        const error = await response.json();
-        console.error('API Error:', error);
-        throw new Error('Failed to save to Google Sheets');
-    }
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                body: JSON.stringify({values: values})
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to save to Google Sheets');
+            }
         }
 
         async function loadFromGoogleSheets() {
             try {
-                const response = await fetch(`${SHEET_URL}?key=${API_KEY}`);
+                const response = await fetch(WEBHOOK_URL);
                 const data = await response.json();
                 
                 if (data.values && data.values.length > 1) {
-                    // Parse and load the data
                     const lastRow = data.values[data.values.length - 1];
-                    if (lastRow[9]) { // Last updated time
+                    if (lastRow[9]) {
                         document.getElementById('updateTime').textContent = `Last Updated: ${lastRow[9]}`;
                     }
                 }
@@ -794,7 +889,6 @@
                     salesman: ''
                 };
 
-                // Get team members
                 const peopleZone = document.querySelector(`[data-crew="${i}"][data-type="people"]`);
                 if (peopleZone) {
                     crew.members = Array.from(peopleZone.children).map(el => ({
@@ -804,25 +898,21 @@
                     }));
                 }
 
-                // Get vehicles
                 const trucksZone = document.querySelector(`[data-crew="${i}"][data-type="trucks"]`);
                 if (trucksZone) {
                     crew.vehicles = Array.from(trucksZone.children).map(el => el.textContent);
                 }
 
-                // Get equipment
                 const equipmentZone = document.querySelector(`[data-crew="${i}"][data-type="equipment"]`);
                 if (equipmentZone) {
                     crew.equipment = Array.from(equipmentZone.children).map(el => el.textContent);
                 }
 
-                // Get jobs
                 const jobsZone = document.querySelector(`[data-crew="${i}"][data-type="jobs"]`);
                 if (jobsZone) {
                     crew.jobs = Array.from(jobsZone.children).map(el => el.textContent);
                 }
 
-                // Get salesman/project manager
                 const salesmanInput = document.querySelector(`input[data-crew="${i}"].salesman-input`);
                 if (salesmanInput) {
                     crew.salesman = salesmanInput.value;
@@ -831,7 +921,6 @@
                 schedule.crews.push(crew);
             }
 
-            // Get absent people
             const absentZone = document.getElementById('absentPool');
             schedule.absent = Array.from(absentZone.children).map(el => ({
                 name: el.textContent,
@@ -839,7 +928,6 @@
                 isManager: el.classList.contains('manager')
             }));
 
-            // Get out of service items
             document.querySelectorAll('#outOfServicePool .draggable').forEach(el => {
                 schedule.outOfService.push({
                     name: el.textContent,
@@ -851,7 +939,7 @@
             return schedule;
         }
 
-        // Initialize date
+        // ============ INITIALIZE DATE AND TIME ============
         document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
             weekday: 'short', 
             month: 'short', 
@@ -859,7 +947,6 @@
             year: 'numeric'
         });
 
-        // Update time functions
         function updateLastModifiedTime() {
             const now = new Date();
             const timeString = now.toLocaleString('en-US', { 
@@ -873,7 +960,7 @@
             document.getElementById('updateTime').textContent = `Last Updated: ${timeString}`;
         }
 
-        // Create crew cards
+        // ============ CREATE CREW CARDS ============
         const crewsContainer = document.getElementById('crewsContainer');
         for (let i = 1; i <= 8; i++) {
             const crewCard = document.createElement('div');
@@ -906,7 +993,7 @@
             crewsContainer.appendChild(crewCard);
         }
 
-        // Modal functions
+        // ============ MODAL FUNCTIONS ============
         function showAddModal() {
             document.getElementById('addModal').style.display = 'block';
         }
@@ -943,7 +1030,6 @@
             newTag.draggable = true;
             newTag.textContent = name;
 
-            // Set the appropriate class based on type
             switch(type) {
                 case 'person':
                     newTag.classList.add('person');
@@ -977,7 +1063,7 @@
             syncToGoogleSheets();
         }
 
-        // Delete mode
+        // ============ DELETE MODE ============
         function toggleDeleteMode() {
             deleteMode = !deleteMode;
             const btn = document.querySelector('.btn-delete-mode');
@@ -1000,16 +1086,18 @@
             }
         }
 
-        // Setup draggable events
+        // ============ DRAG AND DROP FUNCTIONALITY ============
         function setupDraggableEvents(element) {
+            // Desktop events
             element.addEventListener('dragstart', handleDragStart);
             element.addEventListener('dragend', handleDragEnd);
             element.addEventListener('click', handleDeleteClick);
+            
+            // Touch events for iOS
+            element.addEventListener('touchstart', handleTouchStart, {passive: false});
+            element.addEventListener('touchmove', handleTouchMove, {passive: false});
+            element.addEventListener('touchend', handleTouchEnd, {passive: false});
         }
-
-        // Drag and drop functionality
-        let draggedElement = null;
-        let draggedFromOutOfService = false;
 
         function handleDragStart(e) {
             if (!deleteMode && e.target.classList.contains('draggable')) {
@@ -1036,11 +1124,117 @@
             }
         }
 
-        // Set up initial event listeners
-        document.querySelectorAll('.draggable').forEach(element => {
-            setupDraggableEvents(element);
-        });
+        // ============ iOS TOUCH SUPPORT ============
+        function handleTouchStart(e) {
+            if (deleteMode) return;
+            
+            const touch = e.touches[0];
+            touchItem = e.target;
+            
+            if (touchItem.classList.contains('draggable')) {
+                touchItem.style.opacity = '0.5';
+                touchItem.style.zIndex = '1000';
+                e.preventDefault();
+            }
+        }
 
+        function handleTouchMove(e) {
+            if (!touchItem || deleteMode) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            
+            // Remove drag-over from all elements
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            
+            // Find element under touch point
+            touchItem.style.pointerEvents = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchItem.style.pointerEvents = 'auto';
+            
+            if (elementBelow) {
+                let dropTarget = elementBelow;
+                if (!dropTarget.classList.contains('drop-zone') && !dropTarget.classList.contains('resource-items')) {
+                    dropTarget = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+                }
+                if (dropTarget) {
+                    dropTarget.classList.add('drag-over');
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchItem || deleteMode) return;
+            
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            
+            // Find drop zone under touch point
+            touchItem.style.pointerEvents = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchItem.style.pointerEvents = 'auto';
+            
+            let dropZone = elementBelow;
+            if (dropZone && !dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                dropZone = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+            }
+            
+            if (dropZone && touchItem) {
+                // Check if moving from Out of Service
+                const fromOutOfService = touchItem.parentElement.id === 'outOfServicePool';
+                
+                if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
+                    const itemName = touchItem.textContent;
+                    const itemType = touchItem.classList.contains('truck') ? 'truck' : 'equipment';
+                    
+                    if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
+                        touchItem.style.opacity = '1';
+                        touchItem.style.zIndex = '';
+                        touchItem = null;
+                        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                        return;
+                    }
+                }
+                
+                // Check type compatibility
+                const zoneType = dropZone.dataset.type;
+                if (zoneType) {
+                    const itemType = (touchItem.classList.contains('person') || touchItem.classList.contains('crew-leader') || touchItem.classList.contains('manager')) ? 'people' :
+                                   touchItem.classList.contains('truck') ? 'trucks' :
+                                   touchItem.classList.contains('trailer') || touchItem.classList.contains('machine') ? 'equipment' :
+                                   touchItem.classList.contains('job') ? 'jobs' : null;
+                    
+                    if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
+                        touchItem.style.opacity = '1';
+                        touchItem.style.zIndex = '';
+                        touchItem = null;
+                        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                        return;
+                    }
+                }
+                
+                // Update styling
+                if (dropZone.id === 'outOfServicePool') {
+                    touchItem.classList.add('out-of-service');
+                } else {
+                    touchItem.classList.remove('out-of-service');
+                }
+                
+                // Move the element
+                dropZone.appendChild(touchItem);
+                syncToGoogleSheets();
+            }
+            
+            // Clean up
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            if (touchItem) {
+                touchItem.style.opacity = '1';
+                touchItem.style.zIndex = '';
+            }
+            touchItem = null;
+        }
+
+        // ============ DESKTOP DRAG AND DROP EVENTS ============
         document.addEventListener('dragover', (e) => {
             e.preventDefault();
             if (!deleteMode) {
@@ -1073,7 +1267,6 @@
             if (dropZone && draggedElement) {
                 dropZone.classList.remove('drag-over');
                 
-                // Check if moving from Out of Service to active pool
                 if (draggedFromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
                     const itemName = draggedElement.textContent;
                     const itemType = draggedElement.classList.contains('truck') ? 'truck' : 'equipment';
@@ -1108,6 +1301,7 @@
             }
         });
 
+        // ============ UTILITY FUNCTIONS ============
         function clearAllCrews() {
             if (confirm('Clear all crew assignments?')) {
                 document.querySelectorAll('.drop-zone .draggable').forEach(item => {
@@ -1143,6 +1337,11 @@
             window.print();
         }
 
+        // ============ INITIALIZE ============
+        document.querySelectorAll('.draggable').forEach(element => {
+            setupDraggableEvents(element);
+        });
+
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('addModal');
@@ -1150,6 +1349,9 @@
                 closeAddModal();
             }
         }
+
+        // Auto-save every 30 seconds
+        setInterval(syncToGoogleSheets, 30000);
     </script>
 </body>
 </html>

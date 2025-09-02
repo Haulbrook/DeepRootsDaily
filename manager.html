@@ -629,7 +629,7 @@
                 <button class="btn-add" onclick="showAddModal()">➕ Add Tag</button>
                 <button class="btn-delete-mode" onclick="toggleDeleteMode()">🗑️ Delete Mode</button>
                 <button class="btn-clear" onclick="clearAllCrews()">🔄 Clear</button>
-                <button class="btn-print" onclick="printSchedule()">🖨️ Print</button>
+                <button class="btn-print" onclick="loadYesterdaySchedule()">📅 Load Yesterday</button>
             </div>
         </div>
         
@@ -869,6 +869,210 @@
             }
         }
 
+        async function loadYesterdaySchedule() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.textContent = '⏳ Loading yesterday\'s schedule...';
+            syncStatus.classList.remove('error');
+            
+            try {
+                // Get yesterday's date
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayString = yesterday.toLocaleDateString();
+                
+                // Request yesterday's data from Google Sheets using POST
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify({
+                        action: 'getYesterday',
+                        date: yesterdayString
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                if (!data.rows || data.rows.length === 0) {
+                    alert('No schedule found for yesterday. The schedule may have been cleared or not saved.');
+                    syncStatus.textContent = '⚡ Connected to Google Sheets';
+                    return;
+                }
+                
+                // Confirm before loading
+                if (!confirm('This will replace the current schedule with yesterday\'s. Continue?')) {
+                    syncStatus.textContent = '⚡ Connected to Google Sheets';
+                    return;
+                }
+                
+                // Clear current schedule first
+                clearAllCrews(true); // Pass true to skip confirmation
+                
+                // Parse and load the data
+                loadScheduleData(data.rows);
+                
+                syncStatus.textContent = '✅ Loaded yesterday\'s schedule';
+                
+                // Show info about when this was from
+                if (data.timestamp) {
+                    document.getElementById('updateTime').textContent = `Loaded: ${yesterdayString} (Last saved: ${data.timestamp})`;
+                }
+                
+            } catch (error) {
+                console.error('Load yesterday error:', error);
+                syncStatus.textContent = '❌ Failed to load yesterday\'s schedule';
+                syncStatus.classList.add('error');
+                alert('Could not load yesterday\'s schedule. The feature may not be set up in Google Sheets yet.');
+            }
+        }
+
+        function loadScheduleData(rows) {
+            // Process each crew row
+            rows.forEach(row => {
+                // Skip if not a valid crew number
+                const crewNumber = parseInt(row[1]);
+                if (!crewNumber || crewNumber < 1 || crewNumber > 8) return;
+                
+                // Load team members
+                if (row[2]) { // Team_Members
+                    const members = row[2].split(',').map(n => n.trim()).filter(n => n);
+                    members.forEach(name => {
+                        const person = findOrCreatePerson(name, 'person');
+                        if (person) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="people"]`);
+                            if (targetZone) targetZone.appendChild(person);
+                        }
+                    });
+                }
+                
+                // Load crew leaders
+                if (row[3]) { // Crew_Leaders
+                    const leaders = row[3].split(',').map(n => n.trim()).filter(n => n);
+                    leaders.forEach(name => {
+                        const person = findOrCreatePerson(name, 'crew-leader');
+                        if (person) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="people"]`);
+                            if (targetZone) targetZone.appendChild(person);
+                        }
+                    });
+                }
+                
+                // Load managers
+                if (row[4]) { // Managers
+                    const managers = row[4].split(',').map(n => n.trim()).filter(n => n);
+                    managers.forEach(name => {
+                        const person = findOrCreatePerson(name, 'manager');
+                        if (person) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="people"]`);
+                            if (targetZone) targetZone.appendChild(person);
+                        }
+                    });
+                }
+                
+                // Load trucks
+                if (row[5]) { // Truck
+                    const trucks = row[5].split(',').map(n => n.trim()).filter(n => n);
+                    trucks.forEach(name => {
+                        const truck = findItemByName(name);
+                        if (truck) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="trucks"]`);
+                            if (targetZone) targetZone.appendChild(truck);
+                        }
+                    });
+                }
+                
+                // Load equipment
+                if (row[6]) { // Equipment
+                    const equipment = row[6].split(',').map(n => n.trim()).filter(n => n);
+                    equipment.forEach(name => {
+                        const item = findItemByName(name);
+                        if (item) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="equipment"]`);
+                            if (targetZone) targetZone.appendChild(item);
+                        }
+                    });
+                }
+                
+                // Load jobs
+                if (row[7]) { // Job_Name
+                    const jobs = row[7].split(',').map(n => n.trim()).filter(n => n);
+                    jobs.forEach(name => {
+                        const job = findItemByName(name);
+                        if (job) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="jobs"]`);
+                            if (targetZone) targetZone.appendChild(job);
+                        }
+                    });
+                }
+                
+                // Load salesman/PM
+                if (row[8]) { // Salesman_PM
+                    const salesmanInput = document.querySelector(`input[data-crew="${crewNumber}"].salesman-input`);
+                    if (salesmanInput) {
+                        salesmanInput.value = row[8];
+                    }
+                }
+            });
+            
+            // Load absent and out of service from last row if it exists
+            const lastRow = rows[rows.length - 1];
+            if (lastRow && lastRow[10]) { // Absent_Today
+                const absentNames = lastRow[10].split(',').map(n => n.trim()).filter(n => n);
+                absentNames.forEach(name => {
+                    const person = findItemByName(name);
+                    if (person) {
+                        document.getElementById('absentPool').appendChild(person);
+                    }
+                });
+            }
+            
+            if (lastRow && lastRow[11]) { // Out_Of_Service
+                const outOfServiceItems = lastRow[11].split(',').map(n => n.trim()).filter(n => n);
+                outOfServiceItems.forEach(name => {
+                    const item = findItemByName(name);
+                    if (item) {
+                        item.classList.add('out-of-service');
+                        document.getElementById('outOfServicePool').appendChild(item);
+                    }
+                });
+            }
+        }
+
+        function findOrCreatePerson(name, type) {
+            // First, try to find existing person
+            const allDraggables = document.querySelectorAll('.draggable');
+            for (let el of allDraggables) {
+                if (el.textContent === name) {
+                    // Ensure it has the right class
+                    el.className = `draggable ${type}`;
+                    return el;
+                }
+            }
+            
+            // If not found, create new (this handles new employees)
+            const person = document.createElement('div');
+            person.className = `draggable ${type}`;
+            person.draggable = true;
+            person.textContent = name;
+            setupDraggableEvents(person);
+            return person;
+        }
+
+        function findItemByName(name) {
+            const allDraggables = document.querySelectorAll('.draggable');
+            for (let el of allDraggables) {
+                if (el.textContent === name) {
+                    return el;
+                }
+            }
+            return null;
+        }
+
         function collectScheduleData() {
             const schedule = {
                 date: new Date().toISOString(),
@@ -1086,257 +1290,257 @@
             }
         }
 
-// ============ DRAG AND DROP FUNCTIONALITY ============
-function setupDraggableEvents(element) {
-    // Desktop events
-    element.addEventListener('dragstart', handleDragStart);
-    element.addEventListener('dragend', handleDragEnd);
-    element.addEventListener('click', handleDeleteClick);
-    
-    // Touch events for iOS
-    element.addEventListener('touchstart', handleTouchStart, {passive: false});
-    element.addEventListener('touchmove', handleTouchMove, {passive: false});
-    element.addEventListener('touchend', handleTouchEnd, {passive: false});
-}
-
-function handleDragStart(e) {
-    if (deleteMode) {
-        e.preventDefault();
-        return;
-    }
-    
-    draggedElement = e.target;
-    draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
-    
-    // Add dragging class for visual feedback
-    e.target.style.opacity = '0.5';
-    
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target.innerHTML);
-}
-
-function handleDragEnd(e) {
-    // Reset opacity
-    e.target.style.opacity = '';
-    
-    // Clean up
-    document.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-    });
-}
-
-function handleDeleteClick(e) {
-    if (deleteMode && e.target.classList.contains('draggable')) {
-        if (confirm(`Delete "${e.target.textContent}"?`)) {
-            e.target.remove();
-            syncToGoogleSheets();
+        // ============ DRAG AND DROP FUNCTIONALITY ============
+        function setupDraggableEvents(element) {
+            // Desktop events
+            element.addEventListener('dragstart', handleDragStart);
+            element.addEventListener('dragend', handleDragEnd);
+            element.addEventListener('click', handleDeleteClick);
+            
+            // Touch events for iOS
+            element.addEventListener('touchstart', handleTouchStart, {passive: false});
+            element.addEventListener('touchmove', handleTouchMove, {passive: false});
+            element.addEventListener('touchend', handleTouchEnd, {passive: false});
         }
-    }
-}
 
-// ============ iOS TOUCH SUPPORT ============
-let touchOffset = { x: 0, y: 0 };
-
-function handleTouchStart(e) {
-    if (deleteMode) return;
-    
-    touchItem = e.target;
-    const touch = e.touches[0];
-    
-    // Calculate offset for more natural dragging
-    const rect = touchItem.getBoundingClientRect();
-    touchOffset.x = touch.clientX - rect.left;
-    touchOffset.y = touch.clientY - rect.top;
-    
-    touchItem.style.opacity = '0.5';
-    touchItem.style.zIndex = '1000';
-    
-    e.preventDefault();
-}
-
-function handleTouchMove(e) {
-    if (!touchItem || deleteMode) return;
-    
-    e.preventDefault();
-    const touch = e.touches[0];
-    
-    // Clear previous highlights
-    document.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-    });
-    
-    // Find element under touch
-    touchItem.style.pointerEvents = 'none';
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    touchItem.style.pointerEvents = 'auto';
-    
-    if (elementBelow) {
-        let dropTarget = elementBelow;
-        if (!dropTarget.classList.contains('drop-zone') && !dropTarget.classList.contains('resource-items')) {
-            dropTarget = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+        function handleDragStart(e) {
+            if (deleteMode) {
+                e.preventDefault();
+                return;
+            }
+            
+            draggedElement = e.target;
+            draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
+            
+            // Add dragging class for visual feedback
+            e.target.style.opacity = '0.5';
+            
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
         }
-        if (dropTarget) {
-            dropTarget.classList.add('drag-over');
+
+        function handleDragEnd(e) {
+            // Reset opacity
+            e.target.style.opacity = '';
+            
+            // Clean up
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
         }
-    }
-}
 
-function handleTouchEnd(e) {
-    if (!touchItem || deleteMode) return;
-    
-    e.preventDefault();
-    const touch = e.changedTouches[0];
-    
-    // Find drop zone
-    touchItem.style.pointerEvents = 'none';
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    touchItem.style.pointerEvents = 'auto';
-    
-    let dropZone = elementBelow;
-    if (dropZone && !dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
-        dropZone = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
-    }
-    
-    if (dropZone && touchItem) {
-        processDropAction(touchItem, dropZone, touchItem.parentElement.id === 'outOfServicePool');
-    }
-    
-    // Reset
-    document.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-    });
-    
-    if (touchItem) {
-        touchItem.style.opacity = '';
-        touchItem.style.zIndex = '';
-    }
-    touchItem = null;
-}
-
-// ============ DESKTOP DRAG EVENTS ============
-document.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-});
-
-document.addEventListener('dragenter', (e) => {
-    if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
-        e.target.classList.add('drag-over');
-    }
-});
-
-document.addEventListener('dragleave', (e) => {
-    if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
-        e.target.classList.remove('drag-over');
-    }
-});
-
-document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    
-    if (!draggedElement || deleteMode) return;
-    
-    let dropZone = e.target;
-    if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
-        dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
-    }
-    
-    if (dropZone && draggedElement) {
-        dropZone.classList.remove('drag-over');
-        processDropAction(draggedElement, dropZone, draggedFromOutOfService);
-    }
-    
-    // Reset
-    draggedElement = null;
-    draggedFromOutOfService = false;
-});
-
-// ============ SHARED DROP LOGIC ============
-function processDropAction(itemElement, dropZone, fromOutOfService) {
-    // Check out of service confirmation
-    if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
-        const itemName = itemElement.textContent;
-        const itemType = itemElement.classList.contains('truck') ? 'truck' : 'equipment';
-        
-        if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
-            return;
-        }
-    }
-    
-    // Check type compatibility
-    const zoneType = dropZone.dataset.type;
-    if (zoneType) {
-        const itemType = getItemType(itemElement);
-        
-        if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
-            return;
-        }
-    }
-    
-    // Update styling
-    if (dropZone.id === 'outOfServicePool') {
-        itemElement.classList.add('out-of-service');
-    } else {
-        itemElement.classList.remove('out-of-service');
-    }
-    
-    // Move the element
-    dropZone.appendChild(itemElement);
-    
-    // Sync after successful drop
-    syncToGoogleSheets();
-}
-
-function getItemType(element) {
-    if (element.classList.contains('person') || element.classList.contains('crew-leader') || element.classList.contains('manager')) {
-        return 'people';
-    }
-    if (element.classList.contains('truck')) {
-        return 'trucks';
-    }
-    if (element.classList.contains('trailer') || element.classList.contains('machine')) {
-        return 'equipment';
-    }
-    if (element.classList.contains('job')) {
-        return 'jobs';
-    }
-    return null;
-}
-
-        // ============ UTILITY FUNCTIONS ============
-        function clearAllCrews() {
-            if (confirm('Clear all crew assignments?')) {
-                document.querySelectorAll('.drop-zone .draggable').forEach(item => {
-                    if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
-                        document.getElementById('peoplePool').appendChild(item);
-                    } else if (item.classList.contains('truck')) {
-                        item.classList.remove('out-of-service');
-                        document.getElementById('trucksPool').appendChild(item);
-                    } else if (item.classList.contains('trailer') || item.classList.contains('machine')) {
-                        item.classList.remove('out-of-service');
-                        document.getElementById('equipmentPool').appendChild(item);
-                    } else if (item.classList.contains('job')) {
-                        document.getElementById('jobsPool').appendChild(item);
-                    }
-                });
-                
-                document.querySelectorAll('.salesman-input').forEach(input => {
-                    input.value = '';
-                });
-                
-                const absentItems = document.getElementById('absentPool').querySelectorAll('.draggable');
-                absentItems.forEach(item => {
-                    if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
-                        document.getElementById('peoplePool').appendChild(item);
-                    }
-                });
-
-                syncToGoogleSheets();
+        function handleDeleteClick(e) {
+            if (deleteMode && e.target.classList.contains('draggable')) {
+                if (confirm(`Delete "${e.target.textContent}"?`)) {
+                    e.target.remove();
+                    syncToGoogleSheets();
+                }
             }
         }
 
-        function printSchedule() {
-            window.print();
+        // ============ iOS TOUCH SUPPORT ============
+        let touchOffset = { x: 0, y: 0 };
+
+        function handleTouchStart(e) {
+            if (deleteMode) return;
+            
+            touchItem = e.target;
+            const touch = e.touches[0];
+            
+            // Calculate offset for more natural dragging
+            const rect = touchItem.getBoundingClientRect();
+            touchOffset.x = touch.clientX - rect.left;
+            touchOffset.y = touch.clientY - rect.top;
+            
+            touchItem.style.opacity = '0.5';
+            touchItem.style.zIndex = '1000';
+            
+            e.preventDefault();
+        }
+
+        function handleTouchMove(e) {
+            if (!touchItem || deleteMode) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            
+            // Clear previous highlights
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            
+            // Find element under touch
+            touchItem.style.pointerEvents = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchItem.style.pointerEvents = 'auto';
+            
+            if (elementBelow) {
+                let dropTarget = elementBelow;
+                if (!dropTarget.classList.contains('drop-zone') && !dropTarget.classList.contains('resource-items')) {
+                    dropTarget = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+                }
+                if (dropTarget) {
+                    dropTarget.classList.add('drag-over');
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchItem || deleteMode) return;
+            
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            
+            // Find drop zone
+            touchItem.style.pointerEvents = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchItem.style.pointerEvents = 'auto';
+            
+            let dropZone = elementBelow;
+            if (dropZone && !dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                dropZone = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+            }
+            
+            if (dropZone && touchItem) {
+                processDropAction(touchItem, dropZone, touchItem.parentElement.id === 'outOfServicePool');
+            }
+            
+            // Reset
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            
+            if (touchItem) {
+                touchItem.style.opacity = '';
+                touchItem.style.zIndex = '';
+            }
+            touchItem = null;
+        }
+
+        // ============ DESKTOP DRAG EVENTS ============
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+
+        document.addEventListener('dragenter', (e) => {
+            if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                e.target.classList.add('drag-over');
+            }
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                e.target.classList.remove('drag-over');
+            }
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            
+            if (!draggedElement || deleteMode) return;
+            
+            let dropZone = e.target;
+            if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
+            }
+            
+            if (dropZone && draggedElement) {
+                dropZone.classList.remove('drag-over');
+                processDropAction(draggedElement, dropZone, draggedFromOutOfService);
+            }
+            
+            // Reset
+            draggedElement = null;
+            draggedFromOutOfService = false;
+        });
+
+        // ============ SHARED DROP LOGIC ============
+        function processDropAction(itemElement, dropZone, fromOutOfService) {
+            // Check out of service confirmation
+            if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
+                const itemName = itemElement.textContent;
+                const itemType = itemElement.classList.contains('truck') ? 'truck' : 'equipment';
+                
+                if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
+                    return;
+                }
+            }
+            
+            // Check type compatibility
+            const zoneType = dropZone.dataset.type;
+            if (zoneType) {
+                const itemType = getItemType(itemElement);
+                
+                if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
+                    return;
+                }
+            }
+            
+            // Update styling
+            if (dropZone.id === 'outOfServicePool') {
+                itemElement.classList.add('out-of-service');
+            } else {
+                itemElement.classList.remove('out-of-service');
+            }
+            
+            // Move the element
+            dropZone.appendChild(itemElement);
+            
+            // Sync after successful drop
+            syncToGoogleSheets();
+        }
+
+        function getItemType(element) {
+            if (element.classList.contains('person') || element.classList.contains('crew-leader') || element.classList.contains('manager')) {
+                return 'people';
+            }
+            if (element.classList.contains('truck')) {
+                return 'trucks';
+            }
+            if (element.classList.contains('trailer') || element.classList.contains('machine')) {
+                return 'equipment';
+            }
+            if (element.classList.contains('job')) {
+                return 'jobs';
+            }
+            return null;
+        }
+
+        // ============ UTILITY FUNCTIONS ============
+        function clearAllCrews(skipConfirm = false) {
+            if (!skipConfirm && !confirm('Clear all crew assignments?')) {
+                return;
+            }
+            
+            document.querySelectorAll('.drop-zone .draggable').forEach(item => {
+                if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
+                    document.getElementById('peoplePool').appendChild(item);
+                } else if (item.classList.contains('truck')) {
+                    item.classList.remove('out-of-service');
+                    document.getElementById('trucksPool').appendChild(item);
+                } else if (item.classList.contains('trailer') || item.classList.contains('machine')) {
+                    item.classList.remove('out-of-service');
+                    document.getElementById('equipmentPool').appendChild(item);
+                } else if (item.classList.contains('job')) {
+                    document.getElementById('jobsPool').appendChild(item);
+                }
+            });
+            
+            document.querySelectorAll('.salesman-input').forEach(input => {
+                input.value = '';
+            });
+            
+            const absentItems = document.getElementById('absentPool').querySelectorAll('.draggable');
+            absentItems.forEach(item => {
+                if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
+                    document.getElementById('peoplePool').appendChild(item);
+                }
+            });
+
+            if (!skipConfirm) {
+                syncToGoogleSheets();
+            }
         }
 
         // ============ INITIALIZE ============

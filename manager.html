@@ -782,7 +782,11 @@
             if (password === '5203') {
                 document.getElementById('passwordOverlay').classList.add('hidden');
                 document.getElementById('mainScheduler').classList.remove('hidden');
-                initializeScheduler();
+                
+                // Initialize everything after showing the scheduler
+                setTimeout(function() {
+                    initializeScheduler();
+                }, 100); // Small delay to ensure DOM is ready
             } else {
                 document.getElementById('errorMessage').classList.remove('hidden');
                 document.getElementById('passwordInput').value = '';
@@ -790,13 +794,117 @@
         }
 
         function initializeScheduler() {
-            // Initialize all draggable elements AFTER the scheduler is shown
-            document.querySelectorAll('.draggable').forEach(element => {
-                setupDraggableEvents(element);
+            try {
+                console.log('Starting scheduler initialization...');
+                
+                // Create crew cards first
+                createCrewCards();
+                
+                // Set up the date
+                document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                
+                // Initialize all draggable elements
+                const draggables = document.querySelectorAll('.draggable');
+                console.log('Found ' + draggables.length + ' draggable elements');
+                draggables.forEach(element => {
+                    setupDraggableEvents(element);
+                });
+                
+                // Set up document-level drag event listeners
+                setupDocumentDragListeners();
+                
+                // Load data from Google Sheets
+                loadFromGoogleSheets();
+                
+                // Start auto-sync
+                setInterval(syncToGoogleSheets, 60000); // Auto-sync every minute
+                
+                console.log('Scheduler initialized successfully');
+            } catch (error) {
+                console.error('Error initializing scheduler:', error);
+                alert('Error initializing scheduler. Please refresh and try again.');
+            }
+        }
+        
+        function setupDocumentDragListeners() {
+            // Desktop drag events at document level
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            document.addEventListener('dragenter', (e) => {
+                if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                    e.target.classList.add('drag-over');
+                }
+            });
+
+            document.addEventListener('dragleave', (e) => {
+                if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                    e.target.classList.remove('drag-over');
+                }
+            });
+
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+                
+                if (!draggedElement || deleteMode) return;
+                
+                let dropZone = e.target;
+                if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                    dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
+                }
+                
+                if (dropZone && draggedElement) {
+                    dropZone.classList.remove('drag-over');
+                    processDropAction(draggedElement, dropZone, draggedFromOutOfService);
+                }
+                
+                // Reset
+                draggedElement = null;
+                draggedFromOutOfService = false;
             });
             
-            loadFromGoogleSheets();
-            setInterval(syncToGoogleSheets, 60000); // Auto-sync every minute
+            console.log('Document drag listeners set up');
+        }
+
+        function createCrewCards() {
+            const crewsContainer = document.getElementById('crewsContainer');
+            for (let i = 1; i <= 8; i++) {
+                const crewCard = document.createElement('div');
+                crewCard.className = `crew-card crew-${i > 6 ? i - 6 : i}`;
+                crewCard.innerHTML = `
+                    <div class="crew-header">Crew ${i}</div>
+                    <div class="crew-body">
+                        <div class="crew-section">
+                            <div class="crew-section-title">Team (Drop here)</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="people"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Truck</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="trucks"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Equipment</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="equipment"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Job Name</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="jobs"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Salesman/Project Manager</div>
+                            <input type="text" class="input-field salesman-input" placeholder="Enter name..." data-crew="${i}" onchange="syncToGoogleSheets()">
+                        </div>
+                    </div>
+                `;
+                crewsContainer.appendChild(crewCard);
+            }
         }
 
         // ============ GOOGLE SHEETS FUNCTIONS ============
@@ -1149,13 +1257,6 @@
         }
 
         // ============ INITIALIZE DATE AND TIME ============
-        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-        });
-
         function updateLastModifiedTime() {
             const now = new Date();
             const timeString = now.toLocaleString('en-US', { 
@@ -1167,39 +1268,6 @@
                 second: '2-digit'
             });
             document.getElementById('updateTime').textContent = `Last Updated: ${timeString}`;
-        }
-
-        // ============ CREATE CREW CARDS ============
-        const crewsContainer = document.getElementById('crewsContainer');
-        for (let i = 1; i <= 8; i++) {
-            const crewCard = document.createElement('div');
-            crewCard.className = `crew-card crew-${i > 6 ? i - 6 : i}`;
-            crewCard.innerHTML = `
-                <div class="crew-header">Crew ${i}</div>
-                <div class="crew-body">
-                    <div class="crew-section">
-                        <div class="crew-section-title">Team (Drop here)</div>
-                        <div class="drop-zone" data-crew="${i}" data-type="people"></div>
-                    </div>
-                    <div class="crew-section">
-                        <div class="crew-section-title">Truck</div>
-                        <div class="drop-zone" data-crew="${i}" data-type="trucks"></div>
-                    </div>
-                    <div class="crew-section">
-                        <div class="crew-section-title">Equipment</div>
-                        <div class="drop-zone" data-crew="${i}" data-type="equipment"></div>
-                    </div>
-                    <div class="crew-section">
-                        <div class="crew-section-title">Job Name</div>
-                        <div class="drop-zone" data-crew="${i}" data-type="jobs"></div>
-                    </div>
-                    <div class="crew-section">
-                        <div class="crew-section-title">Salesman/Project Manager</div>
-                        <input type="text" class="input-field salesman-input" placeholder="Enter name..." data-crew="${i}" onchange="syncToGoogleSheets()">
-                    </div>
-                </div>
-            `;
-            crewsContainer.appendChild(crewCard);
         }
 
         // ============ MODAL FUNCTIONS ============
@@ -1297,6 +1365,11 @@
 
         // ============ DRAG AND DROP FUNCTIONALITY ============
         function setupDraggableEvents(element) {
+            if (!element) {
+                console.error('setupDraggableEvents called with null element');
+                return;
+            }
+            
             // Desktop events
             element.addEventListener('dragstart', handleDragStart);
             element.addEventListener('dragend', handleDragEnd);
@@ -1309,6 +1382,7 @@
         }
 
         function handleDragStart(e) {
+            console.log('Drag started');
             if (deleteMode) {
                 e.preventDefault();
                 return;
@@ -1325,6 +1399,7 @@
         }
 
         function handleDragEnd(e) {
+            console.log('Drag ended');
             // Reset opacity
             e.target.style.opacity = '';
             
@@ -1549,15 +1624,15 @@
         }
 
         // ============ INITIALIZE ============
-        // Close modal when clicking outside
+        // Set up modal close handler (this can run immediately)
         window.onclick = function(event) {
             const modal = document.getElementById('addModal');
             if (event.target == modal) {
                 closeAddModal();
             }
         }
-
-        // Auto-save will be set up after password entry
+        
+        // Everything else will be initialized after password entry
     </script>
 </body>
 </html>

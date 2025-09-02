@@ -1086,9 +1086,7 @@
             }
         }
 
-        // ============ DRAG AND DROP FUNCTIONALITY ============
-let ghostElement = null;
-
+// ============ DRAG AND DROP FUNCTIONALITY ============
 function setupDraggableEvents(element) {
     // Desktop events
     element.addEventListener('dragstart', handleDragStart);
@@ -1102,26 +1100,29 @@ function setupDraggableEvents(element) {
 }
 
 function handleDragStart(e) {
-    if (!deleteMode && e.target.classList.contains('draggable')) {
-        draggedElement = e.target;
-        e.target.classList.add('dragging');
-        
-        // Create ghost image
-        ghostElement = e.target.cloneNode(true);
-        ghostElement.style.opacity = '0.5';
-        e.dataTransfer.setDragImage(ghostElement, e.offsetX, e.offsetY);
-        e.dataTransfer.effectAllowed = 'move';
-        
-        draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
+    if (deleteMode) {
+        e.preventDefault();
+        return;
     }
+    
+    draggedElement = e.target;
+    draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
+    
+    // Add dragging class for visual feedback
+    e.target.style.opacity = '0.5';
+    
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.innerHTML);
 }
 
 function handleDragEnd(e) {
-    if (e.target.classList.contains('draggable')) {
-        e.target.classList.remove('dragging');
-        ghostElement = null;
-        // Don't sync here - sync happens in the drop event
-    }
+    // Reset opacity
+    e.target.style.opacity = '';
+    
+    // Clean up
+    document.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
 }
 
 function handleDeleteClick(e) {
@@ -1134,28 +1135,23 @@ function handleDeleteClick(e) {
 }
 
 // ============ iOS TOUCH SUPPORT ============
+let touchOffset = { x: 0, y: 0 };
+
 function handleTouchStart(e) {
     if (deleteMode) return;
     
-    const touch = e.touches[0];
     touchItem = e.target;
+    const touch = e.touches[0];
     
-    if (touchItem.classList.contains('draggable')) {
-        touchItem.style.opacity = '0.5';
-        touchItem.style.zIndex = '1000';
-        
-        // Create ghost element for touch
-        ghostElement = touchItem.cloneNode(true);
-        ghostElement.style.position = 'fixed';
-        ghostElement.style.pointerEvents = 'none';
-        ghostElement.style.opacity = '0.7';
-        ghostElement.style.zIndex = '9999';
-        ghostElement.style.left = (touch.clientX - 30) + 'px';
-        ghostElement.style.top = (touch.clientY - 15) + 'px';
-        document.body.appendChild(ghostElement);
-        
-        e.preventDefault();
-    }
+    // Calculate offset for more natural dragging
+    const rect = touchItem.getBoundingClientRect();
+    touchOffset.x = touch.clientX - rect.left;
+    touchOffset.y = touch.clientY - rect.top;
+    
+    touchItem.style.opacity = '0.5';
+    touchItem.style.zIndex = '1000';
+    
+    e.preventDefault();
 }
 
 function handleTouchMove(e) {
@@ -1164,21 +1160,15 @@ function handleTouchMove(e) {
     e.preventDefault();
     const touch = e.touches[0];
     
-    // Move ghost element
-    if (ghostElement) {
-        ghostElement.style.left = (touch.clientX - 30) + 'px';
-        ghostElement.style.top = (touch.clientY - 15) + 'px';
-    }
+    // Clear previous highlights
+    document.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
     
-    // Remove drag-over from all elements
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    
-    // Find element under touch point
+    // Find element under touch
     touchItem.style.pointerEvents = 'none';
-    if (ghostElement) ghostElement.style.pointerEvents = 'none';
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     touchItem.style.pointerEvents = 'auto';
-    if (ghostElement) ghostElement.style.pointerEvents = 'none';
     
     if (elementBelow) {
         let dropTarget = elementBelow;
@@ -1197,13 +1187,7 @@ function handleTouchEnd(e) {
     e.preventDefault();
     const touch = e.changedTouches[0];
     
-    // Remove ghost element
-    if (ghostElement && ghostElement.parentNode === document.body) {
-        document.body.removeChild(ghostElement);
-        ghostElement = null;
-    }
-    
-    // Find drop zone under touch point
+    // Find drop zone
     touchItem.style.pointerEvents = 'none';
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     touchItem.style.pointerEvents = 'auto';
@@ -1214,70 +1198,29 @@ function handleTouchEnd(e) {
     }
     
     if (dropZone && touchItem) {
-        // Check if moving from Out of Service
-        const fromOutOfService = touchItem.parentElement.id === 'outOfServicePool';
-        
-        if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
-            const itemName = touchItem.textContent;
-            const itemType = touchItem.classList.contains('truck') ? 'truck' : 'equipment';
-            
-            if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
-                touchItem.style.opacity = '1';
-                touchItem.style.zIndex = '';
-                touchItem = null;
-                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-                return;
-            }
-        }
-        
-        // Check type compatibility
-        const zoneType = dropZone.dataset.type;
-        if (zoneType) {
-            const itemType = (touchItem.classList.contains('person') || touchItem.classList.contains('crew-leader') || touchItem.classList.contains('manager')) ? 'people' :
-                           touchItem.classList.contains('truck') ? 'trucks' :
-                           touchItem.classList.contains('trailer') || touchItem.classList.contains('machine') ? 'equipment' :
-                           touchItem.classList.contains('job') ? 'jobs' : null;
-            
-            if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
-                touchItem.style.opacity = '1';
-                touchItem.style.zIndex = '';
-                touchItem = null;
-                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-                return;
-            }
-        }
-        
-        // Update styling
-        if (dropZone.id === 'outOfServicePool') {
-            touchItem.classList.add('out-of-service');
-        } else {
-            touchItem.classList.remove('out-of-service');
-        }
-        
-        // Move the element
-        dropZone.appendChild(touchItem);
-        syncToGoogleSheets();
+        processDropAction(touchItem, dropZone, touchItem.parentElement.id === 'outOfServicePool');
     }
     
-    // Clean up
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    // Reset
+    document.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
+    
     if (touchItem) {
-        touchItem.style.opacity = '1';
+        touchItem.style.opacity = '';
         touchItem.style.zIndex = '';
     }
     touchItem = null;
 }
 
-// ============ DESKTOP DRAG AND DROP EVENTS ============
+// ============ DESKTOP DRAG EVENTS ============
 document.addEventListener('dragover', (e) => {
     e.preventDefault();
-    if (!deleteMode) {
-        e.dataTransfer.dropEffect = 'move';
-    }
+    e.dataTransfer.dropEffect = 'move';
 });
 
 document.addEventListener('dragenter', (e) => {
-    if (!deleteMode && (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items'))) {
+    if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
         e.target.classList.add('drag-over');
     }
 });
@@ -1290,53 +1233,75 @@ document.addEventListener('dragleave', (e) => {
 
 document.addEventListener('drop', (e) => {
     e.preventDefault();
-    if (deleteMode || !draggedElement) return;
+    
+    if (!draggedElement || deleteMode) return;
     
     let dropZone = e.target;
-    
     if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
         dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
     }
     
     if (dropZone && draggedElement) {
         dropZone.classList.remove('drag-over');
-        
-        if (draggedFromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
-            const itemName = draggedElement.textContent;
-            const itemType = draggedElement.classList.contains('truck') ? 'truck' : 'equipment';
-            
-            if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
-                draggedFromOutOfService = false;
-                draggedElement = null;
-                return;
-            }
-        }
-        
-        const zoneType = dropZone.dataset.type;
-        if (zoneType) {
-            const itemType = (draggedElement.classList.contains('person') || draggedElement.classList.contains('crew-leader') || draggedElement.classList.contains('manager')) ? 'people' :
-                           draggedElement.classList.contains('truck') ? 'trucks' :
-                           draggedElement.classList.contains('trailer') || draggedElement.classList.contains('machine') ? 'equipment' :
-                           draggedElement.classList.contains('job') ? 'jobs' : null;
-            
-            if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
-                draggedFromOutOfService = false;
-                draggedElement = null;
-                return;
-            }
-        }
-        
-        if (dropZone.id === 'outOfServicePool') {
-            draggedElement.classList.add('out-of-service');
-        } else {
-            draggedElement.classList.remove('out-of-service');
-        }
-        
-        dropZone.appendChild(draggedElement);
-        syncToGoogleSheets();
-        draggedFromOutOfService = false;
-        draggedElement = null;
+        processDropAction(draggedElement, dropZone, draggedFromOutOfService);
     }
+    
+    // Reset
+    draggedElement = null;
+    draggedFromOutOfService = false;
+});
+
+// ============ SHARED DROP LOGIC ============
+function processDropAction(itemElement, dropZone, fromOutOfService) {
+    // Check out of service confirmation
+    if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
+        const itemName = itemElement.textContent;
+        const itemType = itemElement.classList.contains('truck') ? 'truck' : 'equipment';
+        
+        if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
+            return;
+        }
+    }
+    
+    // Check type compatibility
+    const zoneType = dropZone.dataset.type;
+    if (zoneType) {
+        const itemType = getItemType(itemElement);
+        
+        if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
+            return;
+        }
+    }
+    
+    // Update styling
+    if (dropZone.id === 'outOfServicePool') {
+        itemElement.classList.add('out-of-service');
+    } else {
+        itemElement.classList.remove('out-of-service');
+    }
+    
+    // Move the element
+    dropZone.appendChild(itemElement);
+    
+    // Sync after successful drop
+    syncToGoogleSheets();
+}
+
+function getItemType(element) {
+    if (element.classList.contains('person') || element.classList.contains('crew-leader') || element.classList.contains('manager')) {
+        return 'people';
+    }
+    if (element.classList.contains('truck')) {
+        return 'trucks';
+    }
+    if (element.classList.contains('trailer') || element.classList.contains('machine')) {
+        return 'equipment';
+    }
+    if (element.classList.contains('job')) {
+        return 'jobs';
+    }
+    return null;
+}
 });
 
         // ============ UTILITY FUNCTIONS ============

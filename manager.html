@@ -790,6 +790,11 @@
         }
 
         function initializeScheduler() {
+            // Initialize all draggable elements AFTER the scheduler is shown
+            document.querySelectorAll('.draggable').forEach(element => {
+                setupDraggableEvents(element);
+            });
+            
             loadFromGoogleSheets();
             setInterval(syncToGoogleSheets, 60000); // Auto-sync every minute
         }
@@ -1544,10 +1549,6 @@
         }
 
         // ============ INITIALIZE ============
-        document.querySelectorAll('.draggable').forEach(element => {
-            setupDraggableEvents(element);
-        });
-
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('addModal');
@@ -1556,8 +1557,7 @@
             }
         }
 
-        // Auto-save every 30 seconds
-        setInterval(syncToGoogleSheets, 30000);
+        // Auto-save will be set up after password entry
     </script>
 </body>
 </html>

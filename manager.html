@@ -2,9 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crew Scheduler - Manager Portal</title>
+    <!--
+      The viewport tag ensures the page scales properly on mobile.  Do not nest
+      multiple viewport tags.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <title>Crew Scheduler – Manager Portal</title>
+
+    <!--
+      iOS Home Screen icon: update the href to point to your manager icon.
+      This file should be placed at the root of your project (or adjust the
+      relative path accordingly).  On GitHub Pages project sites you may need
+      to prefix the path with your repository name, e.g. /my‑repo/managers‑apple‑touch‑icon‑180.png.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="managers-apple-touch-icon-180.png">
+
+    <!--
+      Enable standalone (full-screen) mode on iOS and customise the title and
+      status bar style.  Adjust the title to whatever you want displayed
+      under the icon on the home screen.
+    -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Crew Schedule">
+
+    <!--
+      Favicon for desktop browsers.  Update the filename if you have a
+      different favicon; sizes can also be adjusted.
+    -->
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+
+    <!--
+      Web App Manifest (for Android/Chrome PWAs).  Create a file named
+      manifest.webmanifest in your project root and include your app icons and
+      other metadata there.  See the README or earlier instructions for an
+      example manifest.
+    -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <!--
+      Theme colour influences the browser UI in some mobile contexts.  Change
+      this to match your brand.
+    -->
+    <meta name="theme-color" content="#9c88ff">
+
     <style>
+        /*
+          Styling for the manager portal.  Only CSS rules belong in this
+          <style> block—do not place <meta> or <link> tags here.
+        */
         * {
             margin: 0;
             padding: 0;
@@ -21,26 +67,6 @@
             -webkit-user-select: none;
             user-select: none;
         }
-        <!-- Apple Touch Icons for iOS -->
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-<!-- Standard favicon for browser tabs -->
-<link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
-
-<!-- For better appearance on iOS when added to home screen -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Crew Schedule">
-
-<!-- For Android and other mobile browsers -->
-<link rel="manifest" href="web-app-manifest-512x512.png">
-<meta name="theme-color" content="#9c88ff">
-
-<!-- General mobile viewport settings -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<!-- Optional: Add a fallback for very old browsers -->
-<link rel="shortcut icon" href="favicon-96x96.png">
 
         /* Password Screen */
         .password-overlay {
@@ -652,11 +678,12 @@
                 <button class="btn-print" onclick="loadYesterdaySchedule()">📅 Load Yesterday</button>
             </div>
         </div>
-        
+
         <div class="resources-bar">
             <div class="resource-section">
                 <h3>👥 Available Crew Members</h3>
                 <div class="resource-items" id="peoplePool">
+                    <!-- Default crew member tags.  Add or remove names as needed. -->
                     <div class="draggable crew-leader" draggable="true">Jacob</div>
                     <div class="draggable person" draggable="true">Vern</div>
                     <div class="draggable person" draggable="true">Andreas</div>
@@ -679,7 +706,7 @@
                     <div class="draggable person" draggable="true">Miguel</div>
                     <div class="draggable person" draggable="true">Andrew</div>
                     <div class="draggable person" draggable="true">Lupe</div>
-                    <div class="draggable crew-leader" draggable="true">Jose I</div>    
+                    <div class="draggable crew-leader" draggable="true">Jose I</div>
                     <div class="draggable manager" draggable="true">Trey</div>
                     <div class="draggable manager" draggable="true">Ashe</div>
                     <div class="draggable manager" draggable="true">Dean</div>
@@ -712,7 +739,7 @@
                 <h3>🔧 Equipment</h3>
                 <div class="resource-items" id="equipmentPool">
                     <div class="draggable trailer" draggable="true">SVL 75 Open</div>
-                    <div class="draggable trailer" draggable="true">SVL 75 closed</div>   
+                    <div class="draggable trailer" draggable="true">SVL 75 closed</div>
                     <div class="draggable trailer" draggable="true">Dingo 1000</div>
                     <div class="draggable trailer" draggable="true">Dingo 500</div>
                     <div class="draggable machine" draggable="true">Hydro Seeder</div>
@@ -788,9 +815,10 @@
 
     <script>
         // ============ CONFIGURATION ============
-        // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        // Replace this with your Google Apps Script Web App URL.  See your
+        // associated Google Sheets script documentation for details.
         const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwV8EIR7jPTZn0bZ7Jgv3Pj-sn13q_Nz4kueZ9pppX_PGZrRbYjieUfkZWA41WLD2c/exec';
-        
+
         let deleteMode = false;
         let touchItem = null;
         let draggedElement = null;
@@ -802,11 +830,10 @@
             if (password === '5203') {
                 document.getElementById('passwordOverlay').classList.add('hidden');
                 document.getElementById('mainScheduler').classList.remove('hidden');
-                
                 // Initialize everything after showing the scheduler
                 setTimeout(function() {
                     initializeScheduler();
-                }, 100); // Small delay to ensure DOM is ready
+                }, 100);
             } else {
                 document.getElementById('errorMessage').classList.remove('hidden');
                 document.getElementById('passwordInput').value = '';
@@ -816,80 +843,65 @@
         function initializeScheduler() {
             try {
                 console.log('Starting scheduler initialization...');
-                
                 // Create crew cards first
                 createCrewCards();
-                
                 // Set up the date
-                document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    month: 'short', 
+                document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
                     day: 'numeric',
                     year: 'numeric'
                 });
-                
                 // Initialize all draggable elements
                 const draggables = document.querySelectorAll('.draggable');
                 console.log('Found ' + draggables.length + ' draggable elements');
                 draggables.forEach(element => {
                     setupDraggableEvents(element);
                 });
-                
                 // Set up document-level drag event listeners
                 setupDocumentDragListeners();
-                
                 // Load data from Google Sheets
                 loadFromGoogleSheets();
-                
-                // Start auto-sync
-                setInterval(syncToGoogleSheets, 60000); // Auto-sync every minute
-                
+                // Start auto-sync (every minute)
+                setInterval(syncToGoogleSheets, 60000);
                 console.log('Scheduler initialized successfully');
             } catch (error) {
                 console.error('Error initializing scheduler:', error);
                 alert('Error initializing scheduler. Please refresh and try again.');
             }
         }
-        
+
         function setupDocumentDragListeners() {
             // Desktop drag events at document level
             document.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
             });
-
             document.addEventListener('dragenter', (e) => {
                 if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
                     e.target.classList.add('drag-over');
                 }
             });
-
             document.addEventListener('dragleave', (e) => {
                 if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
                     e.target.classList.remove('drag-over');
                 }
             });
-
             document.addEventListener('drop', (e) => {
                 e.preventDefault();
-                
                 if (!draggedElement || deleteMode) return;
-                
                 let dropZone = e.target;
                 if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
                     dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
                 }
-                
                 if (dropZone && draggedElement) {
                     dropZone.classList.remove('drag-over');
                     processDropAction(draggedElement, dropZone, draggedFromOutOfService);
                 }
-                
                 // Reset
                 draggedElement = null;
                 draggedFromOutOfService = false;
             });
-            
             console.log('Document drag listeners set up');
         }
 
@@ -932,7 +944,6 @@
             const syncStatus = document.getElementById('syncStatus');
             syncStatus.textContent = '⏳ Syncing...';
             syncStatus.classList.remove('error');
-            
             try {
                 const scheduleData = collectScheduleData();
                 await saveToGoogleSheets(scheduleData);
@@ -948,14 +959,11 @@
         async function saveToGoogleSheets(data) {
             const values = [];
             const today = new Date().toLocaleDateString();
-            
             values.push(['Date', 'Crew_Number', 'Team_Members', 'Crew_Leaders', 'Managers', 'Truck', 'Equipment', 'Job_Name', 'Salesman_PM', 'Last_Updated', 'Absent_Today', 'Out_Of_Service']);
-            
             data.crews.forEach(crew => {
                 const members = crew.members.filter(m => !m.isLeader && !m.isManager).map(m => m.name).join(', ');
                 const leaders = crew.members.filter(m => m.isLeader).map(m => m.name).join(', ');
                 const managers = crew.members.filter(m => m.isManager).map(m => m.name).join(', ');
-                
                 values.push([
                     today,
                     crew.number,
@@ -971,16 +979,13 @@
                     ''
                 ]);
             });
-            
             const absent = data.absent.map(a => a.name).join(', ');
             const outOfService = data.outOfService.map(o => o.name).join(', ');
             values.push([today, 'SUMMARY', '', '', '', '', '', '', '', new Date().toLocaleString(), absent, outOfService]);
-            
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
-                body: JSON.stringify({values: values})
+                body: JSON.stringify({ values: values })
             });
-            
             if (!response.ok) {
                 throw new Error('Failed to save to Google Sheets');
             }
@@ -990,7 +995,6 @@
             try {
                 const response = await fetch(WEBHOOK_URL);
                 const data = await response.json();
-                
                 if (data.values && data.values.length > 1) {
                     const lastRow = data.values[data.values.length - 1];
                     if (lastRow[9]) {
@@ -1006,13 +1010,11 @@
             const syncStatus = document.getElementById('syncStatus');
             syncStatus.textContent = '⏳ Loading yesterday\'s schedule...';
             syncStatus.classList.remove('error');
-            
             try {
                 // Get yesterday's date
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
                 const yesterdayString = yesterday.toLocaleDateString();
-                
                 // Request yesterday's data from Google Sheets using POST
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
@@ -1024,38 +1026,29 @@
                         date: yesterdayString
                     })
                 });
-                
                 const data = await response.json();
-                
                 if (data.error) {
                     throw new Error(data.error);
                 }
-                
                 if (!data.rows || data.rows.length === 0) {
                     alert('No schedule found for yesterday. The schedule may have been cleared or not saved.');
                     syncStatus.textContent = '⚡ Connected to Google Sheets';
                     return;
                 }
-                
                 // Confirm before loading
                 if (!confirm('This will replace the current schedule with yesterday\'s. Continue?')) {
                     syncStatus.textContent = '⚡ Connected to Google Sheets';
                     return;
                 }
-                
                 // Clear current schedule first
-                clearAllCrews(true); // Pass true to skip confirmation
-                
+                clearAllCrews(true);
                 // Parse and load the data
                 loadScheduleData(data.rows);
-                
                 syncStatus.textContent = '✅ Loaded yesterday\'s schedule';
-                
                 // Show info about when this was from
                 if (data.timestamp) {
                     document.getElementById('updateTime').textContent = `Loaded: ${yesterdayString} (Last saved: ${data.timestamp})`;
                 }
-                
             } catch (error) {
                 console.error('Load yesterday error:', error);
                 syncStatus.textContent = '❌ Failed to load yesterday\'s schedule';
@@ -1070,7 +1063,6 @@
                 // Skip if not a valid crew number
                 const crewNumber = parseInt(row[1]);
                 if (!crewNumber || crewNumber < 1 || crewNumber > 8) return;
-                
                 // Load team members
                 if (row[2]) { // Team_Members
                     const members = row[2].split(',').map(n => n.trim()).filter(n => n);
@@ -1082,7 +1074,6 @@
                         }
                     });
                 }
-                
                 // Load crew leaders
                 if (row[3]) { // Crew_Leaders
                     const leaders = row[3].split(',').map(n => n.trim()).filter(n => n);
@@ -1094,7 +1085,6 @@
                         }
                     });
                 }
-                
                 // Load managers
                 if (row[4]) { // Managers
                     const managers = row[4].split(',').map(n => n.trim()).filter(n => n);
@@ -1106,7 +1096,6 @@
                         }
                     });
                 }
-                
                 // Load trucks
                 if (row[5]) { // Truck
                     const trucks = row[5].split(',').map(n => n.trim()).filter(n => n);
@@ -1118,7 +1107,6 @@
                         }
                     });
                 }
-                
                 // Load equipment
                 if (row[6]) { // Equipment
                     const equipment = row[6].split(',').map(n => n.trim()).filter(n => n);
@@ -1130,7 +1118,6 @@
                         }
                     });
                 }
-                
                 // Load jobs
                 if (row[7]) { // Job_Name
                     const jobs = row[7].split(',').map(n => n.trim()).filter(n => n);
@@ -1142,7 +1129,6 @@
                         }
                     });
                 }
-                
                 // Load salesman/PM
                 if (row[8]) { // Salesman_PM
                     const salesmanInput = document.querySelector(`input[data-crew="${crewNumber}"].salesman-input`);
@@ -1151,7 +1137,6 @@
                     }
                 }
             });
-            
             // Load absent and out of service from last row if it exists
             const lastRow = rows[rows.length - 1];
             if (lastRow && lastRow[10]) { // Absent_Today
@@ -1163,7 +1148,6 @@
                     }
                 });
             }
-            
             if (lastRow && lastRow[11]) { // Out_Of_Service
                 const outOfServiceItems = lastRow[11].split(',').map(n => n.trim()).filter(n => n);
                 outOfServiceItems.forEach(name => {
@@ -1186,8 +1170,7 @@
                     return el;
                 }
             }
-            
-            // If not found, create new (this handles new employees)
+            // If not found, create new (handles new employees)
             const person = document.createElement('div');
             person.className = `draggable ${type}`;
             person.draggable = true;
@@ -1214,7 +1197,6 @@
                 absent: [],
                 outOfService: []
             };
-
             const numCrews = document.querySelectorAll('.crew-card').length;
             for (let i = 1; i <= numCrews; i++) {
                 const crew = {
@@ -1225,7 +1207,6 @@
                     jobs: [],
                     salesman: ''
                 };
-
                 const peopleZone = document.querySelector(`[data-crew="${i}"][data-type="people"]`);
                 if (peopleZone) {
                     crew.members = Array.from(peopleZone.children).map(el => ({
@@ -1234,52 +1215,44 @@
                         isManager: el.classList.contains('manager')
                     }));
                 }
-
                 const trucksZone = document.querySelector(`[data-crew="${i}"][data-type="trucks"]`);
                 if (trucksZone) {
                     crew.vehicles = Array.from(trucksZone.children).map(el => el.textContent);
                 }
-
                 const equipmentZone = document.querySelector(`[data-crew="${i}"][data-type="equipment"]`);
                 if (equipmentZone) {
                     crew.equipment = Array.from(equipmentZone.children).map(el => el.textContent);
                 }
-
                 const jobsZone = document.querySelector(`[data-crew="${i}"][data-type="jobs"]`);
                 if (jobsZone) {
                     crew.jobs = Array.from(jobsZone.children).map(el => el.textContent);
                 }
-
                 const salesmanInput = document.querySelector(`input[data-crew="${i}"].salesman-input`);
                 if (salesmanInput) {
                     crew.salesman = salesmanInput.value;
                 }
-
                 schedule.crews.push(crew);
             }
-
             const absentZone = document.getElementById('absentPool');
             schedule.absent = Array.from(absentZone.children).map(el => ({
                 name: el.textContent,
                 isLeader: el.classList.contains('crew-leader'),
                 isManager: el.classList.contains('manager')
             }));
-
             document.querySelectorAll('#outOfServicePool .draggable').forEach(el => {
                 schedule.outOfService.push({
                     name: el.textContent,
-                    type: el.classList.contains('truck') ? 'truck' : 
-                          el.classList.contains('trailer') ? 'trailer' : 'machine'
+                    type: el.classList.contains('truck') ? 'truck' :
+                        el.classList.contains('trailer') ? 'trailer' : 'machine'
                 });
             });
-
             return schedule;
         }
 
-        // ============ INITIALIZE DATE AND TIME ============
+        // ============ DATE AND TIME ============
         function updateLastModifiedTime() {
             const now = new Date();
-            const timeString = now.toLocaleString('en-US', { 
+            const timeString = now.toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -1294,40 +1267,33 @@
         function showAddModal() {
             document.getElementById('addModal').style.display = 'block';
         }
-
         function closeAddModal() {
             document.getElementById('addModal').style.display = 'none';
             document.getElementById('tagName').value = '';
             document.getElementById('tagType').selectedIndex = 0;
             document.getElementById('equipmentSubtype').style.display = 'none';
         }
-
         function checkPersonType() {
             const tagType = document.getElementById('tagType').value;
             const equipmentSubtype = document.getElementById('equipmentSubtype');
-            
             if (tagType === 'equipment') {
                 equipmentSubtype.style.display = 'block';
             } else {
                 equipmentSubtype.style.display = 'none';
             }
         }
-
         function addNewTag() {
             const name = document.getElementById('tagName').value.trim();
             const type = document.getElementById('tagType').value;
-            
             if (!name) {
                 alert('Please enter a name for the tag');
                 return;
             }
-
             const newTag = document.createElement('div');
             newTag.className = 'draggable';
             newTag.draggable = true;
             newTag.textContent = name;
-
-            switch(type) {
+            switch (type) {
                 case 'person':
                     newTag.classList.add('person');
                     document.getElementById('peoplePool').appendChild(newTag);
@@ -1354,7 +1320,6 @@
                     document.getElementById('jobsPool').appendChild(newTag);
                     break;
             }
-
             setupDraggableEvents(newTag);
             closeAddModal();
             syncToGoogleSheets();
@@ -1365,7 +1330,6 @@
             deleteMode = !deleteMode;
             const btn = document.querySelector('.btn-delete-mode');
             const allDraggables = document.querySelectorAll('.draggable');
-            
             if (deleteMode) {
                 btn.classList.add('active');
                 btn.textContent = '🚫 Cancel Delete';
@@ -1389,16 +1353,14 @@
                 console.error('setupDraggableEvents called with null element');
                 return;
             }
-            
             // Desktop events
             element.addEventListener('dragstart', handleDragStart);
             element.addEventListener('dragend', handleDragEnd);
             element.addEventListener('click', handleDeleteClick);
-            
             // Touch events for iOS
-            element.addEventListener('touchstart', handleTouchStart, {passive: false});
-            element.addEventListener('touchmove', handleTouchMove, {passive: false});
-            element.addEventListener('touchend', handleTouchEnd, {passive: false});
+            element.addEventListener('touchstart', handleTouchStart, { passive: false });
+            element.addEventListener('touchmove', handleTouchMove, { passive: false });
+            element.addEventListener('touchend', handleTouchEnd, { passive: false });
         }
 
         function handleDragStart(e) {
@@ -1407,13 +1369,10 @@
                 e.preventDefault();
                 return;
             }
-            
             draggedElement = e.target;
             draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
-            
             // Add dragging class for visual feedback
             e.target.style.opacity = '0.5';
-            
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/html', e.target.innerHTML);
         }
@@ -1422,7 +1381,6 @@
             console.log('Drag ended');
             // Reset opacity
             e.target.style.opacity = '';
-            
             // Clean up
             document.querySelectorAll('.drag-over').forEach(el => {
                 el.classList.remove('drag-over');
@@ -1440,40 +1398,30 @@
 
         // ============ iOS TOUCH SUPPORT ============
         let touchOffset = { x: 0, y: 0 };
-
         function handleTouchStart(e) {
             if (deleteMode) return;
-            
             touchItem = e.target;
             const touch = e.touches[0];
-            
             // Calculate offset for more natural dragging
             const rect = touchItem.getBoundingClientRect();
             touchOffset.x = touch.clientX - rect.left;
             touchOffset.y = touch.clientY - rect.top;
-            
             touchItem.style.opacity = '0.5';
             touchItem.style.zIndex = '1000';
-            
             e.preventDefault();
         }
-
         function handleTouchMove(e) {
             if (!touchItem || deleteMode) return;
-            
             e.preventDefault();
             const touch = e.touches[0];
-            
             // Clear previous highlights
             document.querySelectorAll('.drag-over').forEach(el => {
                 el.classList.remove('drag-over');
             });
-            
             // Find element under touch
             touchItem.style.pointerEvents = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
             touchItem.style.pointerEvents = 'auto';
-            
             if (elementBelow) {
                 let dropTarget = elementBelow;
                 if (!dropTarget.classList.contains('drop-zone') && !dropTarget.classList.contains('resource-items')) {
@@ -1484,32 +1432,25 @@
                 }
             }
         }
-
         function handleTouchEnd(e) {
             if (!touchItem || deleteMode) return;
-            
             e.preventDefault();
             const touch = e.changedTouches[0];
-            
             // Find drop zone
             touchItem.style.pointerEvents = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
             touchItem.style.pointerEvents = 'auto';
-            
             let dropZone = elementBelow;
             if (dropZone && !dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
                 dropZone = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
             }
-            
             if (dropZone && touchItem) {
                 processDropAction(touchItem, dropZone, touchItem.parentElement.id === 'outOfServicePool');
             }
-            
             // Reset
             document.querySelectorAll('.drag-over').forEach(el => {
                 el.classList.remove('drag-over');
             });
-            
             if (touchItem) {
                 touchItem.style.opacity = '';
                 touchItem.style.zIndex = '';
@@ -1517,80 +1458,35 @@
             touchItem = null;
         }
 
-        // ============ DESKTOP DRAG EVENTS ============
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        });
-
-        document.addEventListener('dragenter', (e) => {
-            if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
-                e.target.classList.add('drag-over');
-            }
-        });
-
-        document.addEventListener('dragleave', (e) => {
-            if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
-                e.target.classList.remove('drag-over');
-            }
-        });
-
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-            
-            if (!draggedElement || deleteMode) return;
-            
-            let dropZone = e.target;
-            if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
-                dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
-            }
-            
-            if (dropZone && draggedElement) {
-                dropZone.classList.remove('drag-over');
-                processDropAction(draggedElement, dropZone, draggedFromOutOfService);
-            }
-            
-            // Reset
-            draggedElement = null;
-            draggedFromOutOfService = false;
-        });
-
         // ============ SHARED DROP LOGIC ============
         function processDropAction(itemElement, dropZone, fromOutOfService) {
             // Check out of service confirmation
             if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
                 const itemName = itemElement.textContent;
                 const itemType = itemElement.classList.contains('truck') ? 'truck' : 'equipment';
-                
                 if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
                     return;
                 }
             }
-            
             // Check type compatibility
             const zoneType = dropZone.dataset.type;
             if (zoneType) {
                 const itemType = getItemType(itemElement);
-                
                 if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
                     return;
                 }
             }
-            
             // Update styling
             if (dropZone.id === 'outOfServicePool') {
                 itemElement.classList.add('out-of-service');
             } else {
                 itemElement.classList.remove('out-of-service');
             }
-            
             // Move the element
             dropZone.appendChild(itemElement);
-            
             // Sync after successful drop
             syncToGoogleSheets();
         }
-
         function getItemType(element) {
             if (element.classList.contains('person') || element.classList.contains('crew-leader') || element.classList.contains('manager')) {
                 return 'people';
@@ -1606,13 +1502,11 @@
             }
             return null;
         }
-
         // ============ UTILITY FUNCTIONS ============
         function clearAllCrews(skipConfirm = false) {
             if (!skipConfirm && !confirm('Clear all crew assignments?')) {
                 return;
             }
-            
             document.querySelectorAll('.drop-zone .draggable').forEach(item => {
                 if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
                     document.getElementById('peoplePool').appendChild(item);
@@ -1626,33 +1520,26 @@
                     document.getElementById('jobsPool').appendChild(item);
                 }
             });
-            
             document.querySelectorAll('.salesman-input').forEach(input => {
                 input.value = '';
             });
-            
             const absentItems = document.getElementById('absentPool').querySelectorAll('.draggable');
             absentItems.forEach(item => {
                 if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
                     document.getElementById('peoplePool').appendChild(item);
                 }
             });
-
             if (!skipConfirm) {
                 syncToGoogleSheets();
             }
         }
-
-        // ============ INITIALIZE ============
-        // Set up modal close handler (this can run immediately)
+        // ============ INITIALIZE DATE AND TIME ============
         window.onclick = function(event) {
             const modal = document.getElementById('addModal');
             if (event.target == modal) {
                 closeAddModal();
             }
         }
-        
-        // Everything else will be initialized after password entry
     </script>
 </body>
 </html>

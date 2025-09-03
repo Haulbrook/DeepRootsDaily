@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!--
+      Viewport tag for mobile scaling. Do not duplicate this tag.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <title>Crew Scheduler – Employee Portal</title>
+
+    <!--
+      iOS Home Screen icon: update the href to point to your employee icon.
+      This file should be placed at the root of your project (or adjust the
+      relative path accordingly).  On GitHub Pages project sites you may need
+      to prefix the path with your repository name, e.g. /my‑repo/employees‑apple‑touch‑icon‑180.png.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="employees-apple-touch-icon-180.png">
+
+    <!--
+      Enable standalone (full-screen) mode on iOS and customise the status bar style.
+    -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Crew Schedule">
+
+    <!-- Favicon for desktop browsers -->
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+
+    <!-- Manifest for Android/Chrome PWAs -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#9c88ff">
+
+    <style>
+        /*
+          Employee portal styling. This CSS largely mirrors the manager portal.
+          Only CSS rules belong in this <style> block—do not place <meta> or
+          <link> tags here.
+        */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 10px;
+            overflow-x: auto;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        /* Password Screen */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .password-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .password-box h2 {
+            color: #2d3436;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .password-box input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .password-box button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .password-box button:hover {
+            transform: scale(1.05);
+        }
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .container {
+            min-width: 1200px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        h1 {
+            color: #2d3436;
+            font-size: 1.8em;
+        }
+        /* Removed manager badge for employee portal */
+        .header-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .date-header {
+            color: #636e72;
+            font-size: 1em;
+        }
+        .update-time {
+            background: #fff3cd;
+            color: #856404;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 1px solid #ffc107;
+        }
+        .sync-status {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        .sync-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+        .btn-sync {
+            background: #17a2b8;
+            color: white;
+        }
+        .btn-add {
+            background: #9c88ff;
+            color: white;
+        }
+        .btn-delete-mode {
+            background: #ff6b6b;
+            color: white;
+        }
+        .btn-delete-mode.active {
+            background: #c92a2a;
+            animation: pulse 1s infinite;
+        }
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+        .btn-print {
+            background: #2196F3;
+            color: white;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .resources-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1fr 1fr;
+            gap: 15px;
+        }
+        .resource-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .resource-section h3 {
+            color: #495057;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .resource-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 70px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 2px dashed #dee2e6;
+            max-height: 120px;
+            overflow-y: auto;
+            position: relative;
+        }
+        #outOfServicePool {
+            background: #ffe0e0;
+            border-color: #ff9999;
+        }
+        .draggable {
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: move;
+            font-size: 0.8em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
+            touch-action: none;
+        }
+        .draggable:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .draggable.dragging {
+            opacity: 0.5;
+            z-index: 1000;
+        }
+        .draggable.delete-mode {
+            cursor: pointer;
+        }
+        .draggable.delete-mode:hover {
+            background: #ff6b6b !important;
+            color: white !important;
+            transform: scale(0.95);
+        }
+        .draggable.delete-mode:hover::after {
+            content: '×';
+            position: absolute;
+            right: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .draggable.out-of-service {
+            opacity: 0.6;
+            background: repeating-linear-gradient(
+                45deg,
+                #ff6b6b,
+                #ff6b6b 5px,
+                #ff9999 5px,
+                #ff9999 10px
+            ) !important;
+            color: white !important;
+        }
+        .person {
+            background: #9c88ff;
+            color: white;
+        }
+        .crew-leader {
+            background: linear-gradient(135deg, #ffd700, #ffb347);
+            color: #333;
+            font-weight: 700;
+            border: 2px solid #ffa500;
+            padding: 3px 8px;
+        }
+        .manager {
+            background: linear-gradient(135deg, #ffc0cb, #ffb6c1);
+            color: #333;
+            font-weight: 600;
+            border: 2px solid #ff91a4;
+            padding: 3px 8px;
+        }
+        .truck {
+            background: #00a8ff;
+            color: white;
+        }
+        .trailer {
+            background: #fbc531;
+            color: #333;
+        }
+        .machine {
+            background: #4cd137;
+            color: white;
+        }
+        .job {
+            background: #e74c3c;
+            color: white;
+        }
+        .crews-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        .crew-card {
+            flex: 0 0 190px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .crew-header {
+            padding: 10px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1em;
+        }
+        .crew-1 .crew-header { background: #9c88ff; }
+        .crew-2 .crew-header { background: #00a8ff; }
+        .crew-3 .crew-header { background: #fbc531; }
+        .crew-4 .crew-header { background: #4cd137; }
+        .crew-5 .crew-header { background: #e84393; }
+        .crew-6 .crew-header { background: #00d2d3; }
+        .crew-body {
+            padding: 10px;
+        }
+        .crew-section {
+            margin-bottom: 10px;
+        }
+        .crew-section-title {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .drop-zone {
+            min-height: 35px;
+            padding: 6px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 5px;
+            font-size: 0.8em;
+            position: relative;
+        }
+        .drop-zone.drag-over {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+        .drop-zone .draggable {
+            margin-bottom: 4px;
+            display: block;
+        }
+        .input-field {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #2d3436;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .modal-buttons button {
+            padding: 8px 20px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        /* Scrollbar styling */
+        .resource-items::-webkit-scrollbar,
+        .crews-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .resource-items::-webkit-scrollbar-track,
+        .crews-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        .resource-items::-webkit-scrollbar-thumb,
+        .crews-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        .resource-items::-webkit-scrollbar-thumb:hover,
+        .crews-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                min-width: 100%;
+                padding: 10px;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .resources-bar {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .crews-container {
+                flex-direction: column;
+            }
+            .crew-card {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+            .draggable {
+                padding: 10px 15px;
+                font-size: 1em;
+                margin: 4px;
+            }
+            .drop-zone {
+                min-height: 50px;
+                padding: 10px;
+            }
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .resources-bar, .action-buttons {
+                display: none;
+            }
+            .crews-container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+            .crew-card {
+                flex: unset;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Protection Screen -->
+    <div id="passwordOverlay" class="password-overlay">
+        <div class="password-box">
+            <h2>🔒 Employee Portal</h2>
+            <p style="color: #636e72; margin-bottom: 20px;">Enter password to access scheduler</p>
+            <input type="password" id="passwordInput" placeholder="Enter password" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()">Access Scheduler</button>
+            <div id="errorMessage" class="error-message hidden">Incorrect password. Please try again.</div>
+        </div>
+    </div>
+    <!-- Main Scheduler (Hidden until password correct) -->
+    <div id="mainScheduler" class="container hidden">
+        <div class="header">
+            <h1>📋 Daily Crew Schedule</h1>
+            <div class="header-info">
+                <div class="date-header" id="currentDate"></div>
+                <div class="update-time" id="updateTime">Last Updated: Never</div>
+                <div class="sync-status" id="syncStatus">⚡ Connected to Google Sheets</div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn-sync" onclick="syncToGoogleSheets()">☁️ Sync Now</button>
+                <button class="btn-add" onclick="showAddModal()">➕ Add Tag</button>
+                <button class="btn-delete-mode" onclick="toggleDeleteMode()">🗑️ Delete Mode</button>
+                <button class="btn-clear" onclick="clearAllCrews()">🔄 Clear</button>
+                <button class="btn-print" onclick="loadYesterdaySchedule()">📅 Load Yesterday</button>
+            </div>
+        </div>
+        <div class="resources-bar">
+            <div class="resource-section">
+                <h3>👥 Available Crew Members</h3>
+                <div class="resource-items" id="peoplePool">
+                    <!-- Default crew member tags for employees portal -->
+                    <div class="draggable crew-leader" draggable="true">Jacob</div>
+                    <div class="draggable person" draggable="true">Vern</div>
+                    <div class="draggable person" draggable="true">Andreas</div>
+                    <div class="draggable person" draggable="true">Jaime</div>
+                    <div class="draggable crew-leader" draggable="true">Layne</div>
+                    <div class="draggable person" draggable="true">Daniel</div>
+                    <div class="draggable person" draggable="true">Nathan</div>
+                    <div class="draggable person" draggable="true">Ben</div>
+                    <div the="draggable person" draggable="true">Juan Manuel</div>
+                    <div class="draggable person" draggable="true">Juan Andreas</div>
+                    <div class="draggable person" draggable="true">Scott</div>
+                    <div class="draggable person" draggable="true">Zach</div>
+                    <div class="draggable person" draggable="true">Amador</div>
+                    <div class="draggable person" draggable="true">Edgar</div>
+                    <div class="draggable person" draggable="true">Alejandro</div>
+                    <div class="draggable person" draggable="true">Hayden</div>
+                    <div class="draggable crew-leader" draggable="true">Brandon</div>
+                    <div class="draggable person" draggable="true">Tyler</div>
+                    <div class="draggable person" draggable="true">Fredirico</div>
+                    <div class="draggable person" draggable="true">Miguel</div>
+                    <div class="draggable person" draggable="true">Andrew</div>
+                    <div class="draggable person" draggable="true">Lupe</div>
+                    <div class="draggable crew-leader" draggable="true">Jose I</div>
+                    <div class="draggable person" draggable="true">Trey</div>
+                    <div class="draggable person" draggable="true">Ashe</div>
+                    <div class="draggable person" draggable="true">Dean</div>
+                    <div class="draggable person" draggable="true">James</div>
+                    <div class="draggable person" draggable="true">Dove</div>
+                    <div class="draggable crew-leader" draggable="true">Chase</div>
+                    <div class="draggable person" draggable="true">Armando</div>
+                    <div class="draggable crew-leader" draggable="true">Pulo</div>
+                    <div class="draggable crew-leader" draggable="true">Jonathan</div>
+                </div>
+            </div>
+            <div class="resource-section">
+                <h3>🚛 Trucks</h3>
+                <div class="resource-items" id="trucksPool">
+                    <div class="draggable truck" draggable="true">305 Power wagon</div>
+                    <div class="draggable truck" draggable="true">306 plow</div>
+                    <div class="draggable truck" draggable="true">307 Short Side</div>
+                    <div class="draggable truck" draggable="true">308 White 350</div>
+                    <div class="draggable truck" draggable="true">309 Power Wagon</div>
+                    <div the="draggable truck" draggable="true">310 Silver 350</div>
+                    <div class="draggable truck" draggable="true">701 Open Bed</div>
+                    <div class="draggable truck" draggable="true">301 Big Metal</div>
+                    <div the="draggable truck" draggable="true">302 Old Girl 7.3</div>
+                    <div class="draggable truck" draggable="true">303 Wood Side</div>
+                </div>
+            </div>
+            <div class="resource-section">
+                <h3>🔧 Equipment</h3>
+                <div class="resource-items" id="equipmentPool">
+                    <div class="draggable trailer" draggable="true">SVL 75 Open</div>
+                    <div class="draggable trailer" draggable="true">SVL 75 closed</div>
+                    <div class="draggable trailer" draggable="true">Dingo 1000</div>
+                    <div class="draggable trailer" draggable="true">Dingo 500</div>
+                    <div class="draggable machine" draggable="true">Hydro Seeder</div>
+                    <div class="draggable machine" draggable="true">S85</div>
+                    <div class="draggable machine" draggable="true">Vermeer</div>
+                    <div class="draggable machine" draggable="true">Deere 319</div>
+                    <div class="draggable machine" draggable="true">Deere 333</div>
+                    <div class="draggable machine" draggable="true">KX 057</div>
+                    <div class="draggable machine" draggable="true">KX 040</div>
+                </div>
+            </div>
+            <div class="resource-section">
+                <h3>📍 Job Names</h3>
+                <div class="resource-items" id="jobsPool">
+                    <div class="draggable job" draggable="true">Williams Install</div>
+                    <div class="draggable job" draggable="true">Nathan Project</div>
+                    <div class="draggable job" draggable="true">Flat Creek</div>
+                    <div class="draggable job" draggable="true">Gibley Site</div>
+                    <div class="draggable job" draggable="true">Ross Property</div>
+                </div>
+            </div>
+            <div class="resource-section">
+                <h3>🚫 Absent Today</h3>
+                <div class="resource-items drop-zone" id="absentPool"></div>
+            </div>
+            <div class="resource-section">
+                <h3>⚠️ Out of Service</h3>
+                <div class="resource-items drop-zone" id="outOfServicePool"></div>
+            </div>
+        </div>
+        <div class="crews-container" id="crewsContainer">
+            <!-- Crews will be generated by JavaScript -->
+        </div>
+    </div>
+    <!-- Add Tag Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <h2 class="modal-header">Add New Tag</h2>
+            <div class="form-group">
+                <label for="tagName">Name:</label>
+                <input type="text" id="tagName" placeholder="Enter name...">
+            </div>
+            <div class="form-group">
+                <label for="tagType">Type:</label>
+                <select id="tagType" onchange="checkPersonType()">
+                    <option value="person">Crew Member</option>
+                    <option value="crew-leader">Crew Leader</option>
+                    <option value="manager">Manager/Salesman</option>
+                    <option value="truck">Truck</option>
+                    <option value="equipment">Equipment</option>
+                    <option value="job">Job Name</option>
+                </select>
+            </div>
+            <div class="form-group" id="equipmentSubtype" style="display: none;">
+                <label for="equipmentType">Equipment Type:</label>
+                <select id="equipmentType">
+                    <option value="trailer">Trailer</option>
+                    <option value="machine">Machine</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeAddModal()" style="background: #6c757d; color: white;">Cancel</button>
+                <button onclick="addNewTag()" style="background: #4CAF50; color: white;">Add Tag</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // REUSE THE SAME SCRIPT AS THE MANAGER PORTAL
+        // Configuration and initialization code is identical.
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwV8EIR7jPTZn0bZ7Jgv3Pj-sn13q_Nz4kueZ9pppX_PGZrRbYjieUfkZWA41WLD2c/exec';
+        let deleteMode = false;
+        let touchItem = null;
+        let draggedElement = null;
+        let draggedFromOutOfService = false;
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === '5203') {
+                document.getElementById('passwordOverlay').classList.add('hidden');
+                document.getElementById('mainScheduler').classList.remove('hidden');
+                setTimeout(function () {
+                    initializeScheduler();
+                }, 100);
+            } else {
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+        function initializeScheduler() {
+            try {
+                createCrewCards();
+                document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                const draggables = document.querySelectorAll('.draggable');
+                draggables.forEach(element => {
+                    setupDraggableEvents(element);
+                });
+                setupDocumentDragListeners();
+                loadFromGoogleSheets();
+                setInterval(syncToGoogleSheets, 60000);
+            } catch (error) {
+                alert('Error initializing scheduler. Please refresh and try again.');
+            }
+        }
+        function setupDocumentDragListeners() {
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            document.addEventListener('dragenter', (e) => {
+                if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                    e.target.classList.add('drag-over');
+                }
+            });
+            document.addEventListener('dragleave', (e) => {
+                if (e.target.classList.contains('drop-zone') || e.target.classList.contains('resource-items')) {
+                    e.target.classList.remove('drag-over');
+                }
+            });
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (!draggedElement || deleteMode) return;
+                let dropZone = e.target;
+                if (!dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                    dropZone = e.target.closest('.drop-zone') || e.target.closest('.resource-items');
+                }
+                if (dropZone && draggedElement) {
+                    dropZone.classList.remove('drag-over');
+                    processDropAction(draggedElement, dropZone, draggedFromOutOfService);
+                }
+                draggedElement = null;
+                draggedFromOutOfService = false;
+            });
+        }
+        function createCrewCards() {
+            const crewsContainer = document.getElementById('crewsContainer');
+            for (let i = 1; i <= 8; i++) {
+                const crewCard = document.createElement('div');
+                crewCard.className = `crew-card crew-${i > 6 ? i - 6 : i}`;
+                crewCard.innerHTML = `
+                    <div class="crew-header">Crew ${i}</div>
+                    <div class="crew-body">
+                        <div class="crew-section">
+                            <div class="crew-section-title">Team (Drop here)</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="people"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Truck</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="trucks"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Equipment</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="equipment"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Job Name</div>
+                            <div class="drop-zone" data-crew="${i}" data-type="jobs"></div>
+                        </div>
+                        <div class="crew-section">
+                            <div class="crew-section-title">Salesman/Project Manager</div>
+                            <input type="text" class="input-field salesman-input" placeholder="Enter name..." data-crew="${i}" onchange="syncToGoogleSheets()">
+                        </div>
+                    </div>
+                `;
+                crewsContainer.appendChild(crewCard);
+            }
+        }
+        async function syncToGoogleSheets() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.textContent = '⏳ Syncing...';
+            syncStatus.classList.remove('error');
+            try {
+                const scheduleData = collectScheduleData();
+                await saveToGoogleSheets(scheduleData);
+                syncStatus.textContent = '✅ Synced to Google Sheets';
+                updateLastModifiedTime();
+            } catch (error) {
+                syncStatus.textContent = '❌ Sync failed - check connection';
+                syncStatus.classList.add('error');
+            }
+        }
+        async function saveToGoogleSheets(data) {
+            const values = [];
+            const today = new Date().toLocaleDateString();
+            values.push(['Date', 'Crew_Number', 'Team_Members', 'Crew_Leaders', 'Managers', 'Truck', 'Equipment', 'Job_Name', 'Salesman_PM', 'Last_Updated', 'Absent_Today', 'Out_Of_Service']);
+            data.crews.forEach(crew => {
+                const members = crew.members.filter(m => !m.isLeader && !m.isManager).map(m => m.name).join(', ');
+                const leaders = crew.members.filter(m => m.isLeader).map(m => m.name).join(', ');
+                const managers = crew.members.filter(m => m.isManager).map(m => m.name).join(', ');
+                values.push([
+                    today,
+                    crew.number,
+                    members,
+                    leaders,
+                    managers,
+                    crew.vehicles.join(', '),
+                    crew.equipment.join(', '),
+                    crew.jobs.join(', '),
+                    crew.salesman,
+                    new Date().toLocaleString(),
+                    '',
+                    ''
+                ]);
+            });
+            const absent = data.absent.map(a => a.name).join(', ');
+            const outOfService = data.outOfService.map(o => o.name).join(', ');
+            values.push([today, 'SUMMARY', '', '', '', '', '', '', '', new Date().toLocaleString(), absent, outOfService]);
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                body: JSON.stringify({ values: values })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to save to Google Sheets');
+            }
+        }
+        async function loadFromGoogleSheets() {
+            try {
+                const response = await fetch(WEBHOOK_URL);
+                const data = await response.json();
+                if (data.values && data.values.length > 1) {
+                    const lastRow = data.values[data.values.length - 1];
+                    if (lastRow[9]) {
+                        document.getElementById('updateTime').textContent = `Last Updated: ${lastRow[9]}`;
+                    }
+                }
+            } catch (error) {
+            }
+        }
+        async function loadYesterdaySchedule() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.textContent = '⏳ Loading yesterday\'s schedule...';
+            syncStatus.classList.remove('error');
+            try {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayString = yesterday.toLocaleDateString();
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify({
+                        action: 'getYesterday',
+                        date: yesterdayString
+                    })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                if (!data.rows || data.rows.length === 0) {
+                    alert('No schedule found for yesterday. The schedule may have been cleared or not saved.');
+                    syncStatus.textContent = '⚡ Connected to Google Sheets';
+                    return;
+                }
+                if (!confirm('This will replace the current schedule with yesterday\'s. Continue?')) {
+                    syncStatus.textContent = '⚡ Connected to Google Sheets';
+                    return;
+                }
+                clearAllCrews(true);
+                loadScheduleData(data.rows);
+                syncStatus.textContent = '✅ Loaded yesterday\'s schedule';
+                if (data.timestamp) {
+                    document.getElementById('updateTime').textContent = `Loaded: ${yesterdayString} (Last saved: ${data.timestamp})`;
+                }
+            } catch (error) {
+                syncStatus.textContent = '❌ Failed to load yesterday\'s schedule';
+                syncStatus.classList.add('error');
+                alert('Could not load yesterday\'s schedule. The feature may not be set up in Google Sheets yet.');
+            }
+        }
+        function loadScheduleData(rows) {
+            rows.forEach(row => {
+                const crewNumber = parseInt(row[1]);
+                if (!crewNumber || crewNumber < 1 || crewNumber > 8) return;
+                if (row[2]) { // Team members
+                    const members = row[2].split(',').map(n => n.trim()).filter(n => n);
+                    members.forEach(name => {
+                        const person = findOrCreatePerson(name, 'person');
+                        if (person) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="people"]`);
+                            if (targetZone) targetZone.appendChild(person);
+                        }
+                    });
+                }
+                if (row[3]) {
+                    const leaders = row[3].split(',').map(n => n.trim()).filter(n => n);
+                    leaders.forEach(name => {
+                        const person = findOrCreatePerson(name, 'crew-leader');
+                        if (person) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="people"]`);
+                            if (targetZone) targetZone.appendChild(person);
+                        }
+                    });
+                }
+                if (row[4]) {
+                    const managers = row[4].split(',').map(n => n.trim()).filter(n => n);
+                    managers.forEach(name => {
+                        const person = findOrCreatePerson(name, 'manager');
+                        if (person) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="people"]`);
+                            if (targetZone) targetZone.appendChild(person);
+                        }
+                    });
+                }
+                if (row[5]) {
+                    const trucks = row[5].split(',').map(n => n.trim()).filter(n => n);
+                    trucks.forEach(name => {
+                        const truck = findItemByName(name);
+                        if (truck) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="trucks"]`);
+                            if (targetZone) targetZone.appendChild(truck);
+                        }
+                    });
+                }
+                if (row[6]) {
+                    const equipment = row[6].split(',').map(n => n.trim()).filter(n => n);
+                    equipment.forEach(name => {
+                        const item = findItemByName(name);
+                        if (item) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="equipment"]`);
+                            if (targetZone) targetZone.appendChild(item);
+                        }
+                    });
+                }
+                if (row[7]) {
+                    const jobs = row[7].split(',').map(n => n.trim()).filter(n => n);
+                    jobs.forEach(name => {
+                        const job = findItemByName(name);
+                        if (job) {
+                            const targetZone = document.querySelector(`[data-crew="${crewNumber}"][data-type="jobs"]`);
+                            if (targetZone) targetZone.appendChild(job);
+                        }
+                    });
+                }
+                if (row[8]) {
+                    const salesmanInput = document.querySelector(`input[data-crew="${crewNumber}"].salesman-input`);
+                    if (salesmanInput) {
+                        salesmanInput.value = row[8];
+                    }
+                }
+            });
+            const lastRow = rows[rows.length - 1];
+            if (lastRow && lastRow[10]) {
+                const absentNames = lastRow[10].split(',').map(n => n.trim()).filter(n => n);
+                absentNames.forEach(name => {
+                    const person = findItemByName(name);
+                    if (person) {
+                        document.getElementById('absentPool').appendChild(person);
+                    }
+                });
+            }
+            if (lastRow && lastRow[11]) {
+                const outOfServiceItems = lastRow[11].split(',').map(n => n.trim()).filter(n => n);
+                outOfServiceItems.forEach(name => {
+                    const item = findItemByName(name);
+                    if (item) {
+                        item.classList.add('out-of-service');
+                        document.getElementById('outOfServicePool').appendChild(item);
+                    }
+                });
+            }
+        }
+        function findOrCreatePerson(name, type) {
+            const allDraggables = document.querySelectorAll('.draggable');
+            for (let el of allDraggables) {
+                if (el.textContent === name) {
+                    el.className = `draggable ${type}`;
+                    return el;
+                }
+            }
+            const person = document.createElement('div');
+            person.className = `draggable ${type}`;
+            person.draggable = true;
+            person.textContent = name;
+            setupDraggableEvents(person);
+            return person;
+        }
+        function findItemByName(name) {
+            const allDraggables = document.querySelectorAll('.draggable');
+            for (let el of allDraggables) {
+                if (el.textContent === name) {
+                    return el;
+                }
+            }
+            return null;
+        }
+        function collectScheduleData() {
+            const schedule = {
+                date: new Date().toISOString(),
+                lastUpdate: new Date().toLocaleString(),
+                crews: [],
+                absent: [],
+                outOfService: []
+            };
+            const numCrews = document.querySelectorAll('.crew-card').length;
+            for (let i = 1; i <= numCrews; i++) {
+                const crew = {
+                    number: i,
+                    members: [],
+                    vehicles: [],
+                    equipment: [],
+                    jobs: [],
+                    salesman: ''
+                };
+                const peopleZone = document.querySelector(`[data-crew="${i}"][data-type="people"]`);
+                if (peopleZone) {
+                    crew.members = Array.from(peopleZone.children).map(el => ({
+                        name: el.textContent,
+                        isLeader: el.classList.contains('crew-leader'),
+                        isManager: el.classList.contains('manager')
+                    }));
+                }
+                const trucksZone = document.querySelector(`[data-crew="${i}"][data-type="trucks"]`);
+                if (trucksZone) {
+                    crew.vehicles = Array.from(trucksZone.children).map(el => el.textContent);
+                }
+                const equipmentZone = document.querySelector(`[data-crew="${i}"][data-type="equipment"]`);
+                if (equipmentZone) {
+                    crew.equipment = Array.from(equipmentZone.children).map(el => el.textContent);
+                }
+                const jobsZone = document.querySelector(`[data-crew="${i}"][data-type="jobs"]`);
+                if (jobsZone) {
+                    crew.jobs = Array.from(jobsZone.children).map(el => el.textContent);
+                }
+                const salesmanInput = document.querySelector(`input[data-crew="${i}"].salesman-input`);
+                if (salesmanInput) {
+                    crew.salesman = salesmanInput.value;
+                }
+                schedule.crews.push(crew);
+            }
+            const absentZone = document.getElementById('absentPool');
+            schedule.absent = Array.from(absentZone.children).map(el => ({
+                name: el.textContent,
+                isLeader: el.classList.contains('crew-leader'),
+                isManager: el.classList.contains('manager')
+            }));
+            document.querySelectorAll('#outOfServicePool .draggable').forEach(el => {
+                schedule.outOfService.push({
+                    name: el.textContent,
+                    type: el.classList.contains('truck') ? 'truck' :
+                        el.classList.contains('trailer') ? 'trailer' : 'machine'
+                });
+            });
+            return schedule;
+        }
+        function updateLastModifiedTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('updateTime').textContent = `Last Updated: ${timeString}`;
+        }
+        function showAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.getElementById('tagName').value = '';
+            document.getElementById('tagType').selectedIndex = 0;
+            document.getElementById('equipmentSubtype').style.display = 'none';
+        }
+        function checkPersonType() {
+            const tagType = document.getElementById('tagType').value;
+            const equipmentSubtype = document.getElementById('equipmentSubtype');
+            if (tagType === 'equipment') {
+                equipmentSubtype.style.display = 'block';
+            } else {
+                equipmentSubtype.style.display = 'none';
+            }
+        }
+        function addNewTag() {
+            const name = document.getElementById('tagName').value.trim();
+            const type = document.getElementById('tagType').value;
+            if (!name) {
+                alert('Please enter a name for the tag');
+                return;
+            }
+            const newTag = document.createElement('div');
+            newTag.className = 'draggable';
+            newTag.draggable = true;
+            newTag.textContent = name;
+            switch (type) {
+                case 'person':
+                    newTag.classList.add('person');
+                    document.getElementById('peoplePool').appendChild(newTag);
+                    break;
+                case 'crew-leader':
+                    newTag.classList.add('crew-leader');
+                    document.getElementById('peoplePool').appendChild(newTag);
+                    break;
+                case 'manager':
+                    newTag.classList.add('manager');
+                    document.getElementById('peoplePool').appendChild(newTag);
+                    break;
+                case 'truck':
+                    newTag.classList.add('truck');
+                    document.getElementById('trucksPool').appendChild(newTag);
+                    break;
+                case 'equipment':
+                    const equipType = document.getElementById('equipmentType').value;
+                    newTag.classList.add(equipType);
+                    document.getElementById('equipmentPool').appendChild(newTag);
+                    break;
+                case 'job':
+                    newTag.classList.add('job');
+                    document.getElementById('jobsPool').appendChild(newTag);
+                    break;
+            }
+            setupDraggableEvents(newTag);
+            closeAddModal();
+            syncToGoogleSheets();
+        }
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            const btn = document.querySelector('.btn-delete-mode');
+            const allDraggables = document.querySelectorAll('.draggable');
+            if (deleteMode) {
+                btn.classList.add('active');
+                btn.textContent = '🚫 Cancel Delete';
+                allDraggables.forEach(item => {
+                    item.classList.add('delete-mode');
+                    item.draggable = false;
+                });
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🗑️ Delete Mode';
+                allDraggables.forEach(item => {
+                    item.classList.remove('delete-mode');
+                    item.draggable = true;
+                });
+            }
+        }
+        function setupDraggableEvents(element) {
+            if (!element) return;
+            element.addEventListener('dragstart', handleDragStart);
+            element.addEventListener('dragend', handleDragEnd);
+            element.addEventListener('click', handleDeleteClick);
+            element.addEventListener('touchstart', handleTouchStart, { passive: false });
+            element.addEventListener('touchmove', handleTouchMove, { passive: false });
+            element.addEventListener('touchend', handleTouchEnd, { passive: false });
+        }
+        function handleDragStart(e) {
+            if (deleteMode) {
+                e.preventDefault();
+                return;
+            }
+            draggedElement = e.target;
+            draggedFromOutOfService = e.target.parentElement.id === 'outOfServicePool';
+            e.target.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
+        }
+        function handleDragEnd(e) {
+            e.target.style.opacity = '';
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+        }
+        function handleDeleteClick(e) {
+            if (deleteMode && e.target.classList.contains('draggable')) {
+                if (confirm(`Delete "${e.target.textContent}"?`)) {
+                    e.target.remove();
+                    syncToGoogleSheets();
+                }
+            }
+        }
+        let touchOffset = { x: 0, y: 0 };
+        function handleTouchStart(e) {
+            if (deleteMode) return;
+            touchItem = e.target;
+            const touch = e.touches[0];
+            const rect = touchItem.getBoundingClientRect();
+            touchOffset.x = touch.clientX - rect.left;
+            touchOffset.y = touch.clientY - rect.top;
+            touchItem.style.opacity = '0.5';
+            touchItem.style.zIndex = '1000';
+            e.preventDefault();
+        }
+        function handleTouchMove(e) {
+            if (!touchItem || deleteMode) return;
+            e.preventDefault();
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            const touch = e.touches[0];
+            touchItem.style.pointerEvents = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchItem.style.pointerEvents = 'auto';
+            if (elementBelow) {
+                let dropTarget = elementBelow;
+                if (!dropTarget.classList.contains('drop-zone') && !dropTarget.classList.contains('resource-items')) {
+                    dropTarget = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+                }
+                if (dropTarget) {
+                    dropTarget.classList.add('drag-over');
+                }
+            }
+        }
+        function handleTouchEnd(e) {
+            if (!touchItem || deleteMode) return;
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            touchItem.style.pointerEvents = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchItem.style.pointerEvents = 'auto';
+            let dropZone = elementBelow;
+            if (dropZone && !dropZone.classList.contains('drop-zone') && !dropZone.classList.contains('resource-items')) {
+                dropZone = elementBelow.closest('.drop-zone') || elementBelow.closest('.resource-items');
+            }
+            if (dropZone && touchItem) {
+                processDropAction(touchItem, dropZone, touchItem.parentElement.id === 'outOfServicePool');
+            }
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            if (touchItem) {
+                touchItem.style.opacity = '';
+                touchItem.style.zIndex = '';
+            }
+            touchItem = null;
+        }
+        function processDropAction(itemElement, dropZone, fromOutOfService) {
+            if (fromOutOfService && dropZone.id !== 'outOfServicePool' && dropZone.id !== 'absentPool') {
+                const itemName = itemElement.textContent;
+                const itemType = itemElement.classList.contains('truck') ? 'truck' : 'equipment';
+                if (!confirm(`Are you sure the ${itemType} "${itemName}" is fixed and ready to return to service?`)) {
+                    return;
+                }
+            }
+            const zoneType = dropZone.dataset.type;
+            if (zoneType) {
+                const itemType = getItemType(itemElement);
+                if (zoneType !== itemType && dropZone.id !== 'absentPool' && dropZone.id !== 'outOfServicePool') {
+                    return;
+                }
+            }
+            if (dropZone.id === 'outOfServicePool') {
+                itemElement.classList.add('out-of-service');
+            } else {
+                itemElement.classList.remove('out-of-service');
+            }
+            dropZone.appendChild(itemElement);
+            syncToGoogleSheets();
+        }
+        function getItemType(element) {
+            if (element.classList.contains('person') || element.classList.contains('crew-leader') || element.classList.contains('manager')) {
+                return 'people';
+            }
+            if (element.classList.contains('truck')) {
+                return 'trucks';
+            }
+            if (element.classList.contains('trailer') || element.classList.contains('machine')) {
+                return 'equipment';
+            }
+            if (element.classList.contains('job')) {
+                return 'jobs';
+            }
+            return null;
+        }
+        function clearAllCrews(skipConfirm = false) {
+            if (!skipConfirm && !confirm('Clear all crew assignments?')) {
+                return;
+            }
+            document.querySelectorAll('.drop-zone .draggable').forEach(item => {
+                if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
+                    document.getElementById('peoplePool').appendChild(item);
+                } else if (item.classList.contains('truck')) {
+                    item.classList.remove('out-of-service');
+                    document.getElementById('trucksPool').appendChild(item);
+                } else if (item.classList.contains('trailer') || item.classList.contains('machine')) {
+                    item.classList.remove('out-of-service');
+                    document.getElementById('equipmentPool').appendChild(item);
+                } else if (item.classList.contains('job')) {
+                    document.getElementById('jobsPool').appendChild(item);
+                }
+            });
+            document.querySelectorAll('.salesman-input').forEach(input => {
+                input.value = '';
+            });
+            const absentItems = document.getElementById('absentPool').querySelectorAll('.draggable');
+            absentItems.forEach(item => {
+                if (item.classList.contains('person') || item.classList.contains('crew-leader') || item.classList.contains('manager')) {
+                    document.getElementById('peoplePool').appendChild(item);
+                }
+            });
+            if (!skipConfirm) {
+                syncToGoogleSheets();
+            }
+        }
+        window.onclick = function(event) {
+            const modal = document.getElementById('addModal');
+            if (event.target == modal) {
+                closeAddModal();
+            }
+        }
+    </script>
+</body>
+</html>

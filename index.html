@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep Roots Landscape - Live Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Deep Roots Landscape - Asset Management Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -14,100 +13,303 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%);
-            color: #333;
+            background: linear-gradient(135deg, #f5f2e8 0%, #e8ddc7 50%, #f5f2e8 100%);
             min-height: 100vh;
+            color: #2d4a2b;
         }
 
-        .dashboard {
-            padding: 20px;
-            max-width: 1200px;
+        .container {
+            max-width: 1600px;
             margin: 0 auto;
+            padding: 20px;
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 30px;
+            background: linear-gradient(135deg, #2d4a2b 0%, #4a7c59 100%);
             color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
         }
 
-        .last-updated {
-            color: #a8d8a8;
-            font-size: 0.9rem;
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
         }
 
-        .grid {
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
         }
 
         .card {
             background: white;
             border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(45, 74, 43, 0.15);
+            border: 2px solid rgba(74, 124, 89, 0.1);
+            position: relative;
+            overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 35px rgba(45, 74, 43, 0.2);
         }
 
         .card-header {
             display: flex;
-            justify-content: between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #4a7c59;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
 
         .card-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #2c5530;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a7c59, #2d4a2b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .card h3 {
+            color: #2d4a2b;
+            font-size: 1.3rem;
         }
 
         .status-indicator {
-            padding: 4px 12px;
-            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-online { background-color: #4CAF50; }
+        .status-offline { background-color: #f44336; }
+        .status-warning { background-color: #ff9800; }
+        .status-maintenance { background-color: #9c27b0; }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2d4a2b;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e8ddc7;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4a7c59;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4a7c59, #2d4a2b);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(45, 74, 43, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 15px;
+            background: #f8f6f0;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .metric:hover {
+            background: #f0ece0;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2d4a2b;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .inventory-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .inventory-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f6f0;
+            border-radius: 8px;
+            border-left: 4px solid #4a7c59;
+        }
+
+        .item-info {
+            flex-grow: 1;
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #2d4a2b;
+        }
+
+        .item-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .item-status {
+            padding: 4px 8px;
+            border-radius: 12px;
             font-size: 0.8rem;
             font-weight: bold;
         }
 
-        .status-online { background: #d4edda; color: #155724; }
-        .status-offline { background: #f8d7da; color: #721c24; }
-        .status-pending { background: #fff3cd; color: #856404; }
+        .status-available { background-color: #d4edda; color: #155724; }
+        .status-rented { background-color: #fff3cd; color: #856404; }
+        .status-maintenance { background-color: #f8d7da; color: #721c24; }
+        .status-low { background-color: #ffeaa7; color: #6c5ce7; }
 
-        .metric {
+        .equipment-map {
+            height: 250px;
+            background: #f0f0f0;
+            border-radius: 10px;
             display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .metric:last-child {
-            border-bottom: none;
-        }
-
-        .metric-value {
-            font-weight: bold;
-            color: #2c5530;
-        }
-
-        .chart-container {
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            margin: 15px 0;
             position: relative;
-            height: 300px;
-            margin-top: 20px;
+        }
+
+        .location-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #4a7c59;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .location-marker:hover {
+            transform: scale(1.2);
+            background: #2d4a2b;
+        }
+
+        .tool-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .tool-control {
+            flex: 1;
+            padding: 15px;
+            background: #f8f6f0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .tool-control:hover {
+            background: #e8ddc7;
+            border-color: #4a7c59;
+        }
+
+        .tool-control.active {
+            background: #4a7c59;
+            color: white;
         }
 
         .activity-log {
@@ -115,522 +317,641 @@
             overflow-y: auto;
         }
 
-        .activity-item {
+        .log-entry {
             padding: 10px;
-            border-left: 3px solid #4a7c59;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            border-radius: 0 5px 5px 0;
+            margin: 8px 0;
+            background: #f8f6f0;
+            border-radius: 8px;
+            border-left: 4px solid #4a7c59;
+            font-size: 0.9rem;
         }
 
-        .activity-time {
+        .log-timestamp {
+            color: #666;
             font-size: 0.8rem;
-            color: #6c757d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
             font-weight: bold;
+            cursor: pointer;
+            color: #666;
         }
 
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-            color: #6c757d;
+        .close:hover {
+            color: #2d4a2b;
         }
 
-        .error {
-            color: #dc3545;
-            text-align: center;
-            padding: 20px;
-            background: #f8d7da;
-            border-radius: 5px;
-            margin: 10px 0;
+        .real-time-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #e8ddc7;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8ddc7;
+        }
+
+        th {
+            background-color: #f8f6f0;
+            font-weight: bold;
+            color: #2d4a2b;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
         }
 
         @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
+            .container {
+                padding: 15px;
             }
             
             .header h1 {
                 font-size: 2rem;
             }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .tool-controls {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard">
+    <div class="real-time-indicator">
+        🟢 Live Asset Tracking
+    </div>
+
+    <div class="container">
         <div class="header">
-            <h1>🌿 Deep Roots Landscape Dashboard</h1>
-            <div class="last-updated">Last Updated: <span id="lastUpdated">Loading...</span></div>
+            <h1>🌳 Deep Roots Landscape</h1>
+            <p>Asset Management & Inventory Dashboard</p>
         </div>
 
-        <div class="grid">
-            <!-- Key Metrics -->
+        <div class="dashboard-grid">
+            <!-- Inventory Management -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">📊 Key Metrics</div>
-                    <div class="status-indicator status-online" id="metricsStatus">Live</div>
+                    <div class="card-title">
+                        <div class="card-icon">📦</div>
+                        <h3>Inventory Management</h3>
+                    </div>
+                    <button class="btn" onclick="openModal('addInventoryModal')">Add Item</button>
                 </div>
-                <div id="keyMetrics">
-                    <div class="loading">Loading metrics...</div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="total-items">1</div>
+                        <div class="metric-label">Total Items</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="low-stock">12</div>
+                        <div class="metric-label">Low Stock</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="out-of-stock">3</div>
+                        <div class="metric-label">Out of Stock</div>
+                    </div>
+                </div>
+                <input type="text" class="search-box" placeholder="Search inventory..." onkeyup="searchInventory(this.value)">
+                <div class="inventory-list" id="inventory-list">
+                    
+                        <div class="inventory-item">
+                            <div class="item-info">
+                                <div class="item-name">ToolID</div>
+                                <div class="item-details">Qty: Name | Location: Description</div>
+                            </div>
+                            <div class="item-status status-available">Available</div>
+                        </div>
+                    
                 </div>
             </div>
 
-            <!-- Revenue Chart -->
+            <!-- Equipment Location Tracking -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">💰 Revenue Trends</div>
-                    <div class="status-indicator status-online">Live</div>
+                    <div class="card-title">
+                        <div class="card-icon">📍</div>
+                        <h3>Equipment Location</h3>
+                    </div>
+                    <button class="btn" onclick="openModal('updateLocationModal')">Update Location</button>
                 </div>
-                <div class="chart-container">
-                    <canvas id="revenueChart"></canvas>
+                <div class="status-indicator">
+                    <div class="status-dot status-online"></div>
+                    <span>GPS Tracking Active</span>
+                </div>
+                <div class="equipment-map" id="equipment-map">
+                    <div style="text-align: center;">
+                        <div>🗺️ Equipment Location Map</div>
+                        <small>Click markers for details</small>
+                    </div>
+                    <div class="location-marker" style="top: 30%; left: 25%;" onclick="showLocationDetails('Crew A', 'Main Street Job Site')" title="Crew A">A</div>
+                    <div class="location-marker" style="top: 60%; left: 70%;" onclick="showLocationDetails('Crew B', 'Oak Avenue Project')" title="Crew B">B</div>
+                    <div class="location-marker" style="top: 80%; left: 40%;" onclick="showLocationDetails('Equipment Yard', 'Home Base')" title="Equipment Yard">H</div>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value">15</div>
+                        <div class="metric-label">Active Locations</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3</div>
+                        <div class="metric-label">Mobile Units</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Current Jobs -->
+            <!-- Rental Equipment Management -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">🚧 Active Jobs</div>
-                    <div class="status-indicator status-online" id="jobsStatus">Live</div>
+                    <div class="card-title">
+                        <div class="card-icon">🚜</div>
+                        <h3>Rental Equipment</h3>
+                    </div>
+                    <button class="btn" onclick="openModal('checkInOutModal')">Check In/Out</button>
                 </div>
-                <div id="activeJobs">
-                    <div class="loading">Loading jobs...</div>
+                <div class="status-indicator">
+                    <div class="status-dot status-online"></div>
+                    <span>12 Items Currently Rented</span>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value">89</div>
+                        <div class="metric-label">Available</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">12</div>
+                        <div class="metric-label">Rented Out</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3</div>
+                        <div class="metric-label">Maintenance</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment</th>
+                                <th>Status</th>
+                                <th>Due Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Excavator #203</td>
+                                <td><span class="item-status status-rented">Rented</span></td>
+                                <td>2024-01-15</td>
+                                <td><button class="btn btn-secondary" onclick="returnEquipment('203')">Return</button></td>
+                            </tr>
+                            <tr>
+                                <td>Chainsaw #045</td>
+                                <td><span class="item-status status-available">Available</span></td>
+                                <td>-</td>
+                                <td><button class="btn" onclick="rentEquipment('045')">Rent Out</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Equipment Status -->
+            <!-- Tool Control Center -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">🔧 Equipment Status</div>
-                    <div class="status-indicator status-online" id="equipmentStatus">Live</div>
+                    <div class="card-title">
+                        <div class="card-icon">🎛️</div>
+                        <h3>Tool Control Center</h3>
+                    </div>
                 </div>
-                <div id="equipmentList">
-                    <div class="loading">Loading equipment data...</div>
+                <div class="tool-controls">
+                    <div class="tool-control" onclick="activateTool('chat')" id="chat-control">
+                        <div>💬</div>
+                        <div>Inventory Chat</div>
+                        <small>AI Assistant</small>
+                    </div>
+                    <div class="tool-control" onclick="activateTool('scheduler')" id="scheduler-control">
+                        <div>📅</div>
+                        <div>Crew Scheduler</div>
+                        <small>Team Management</small>
+                    </div>
+                    <div class="tool-control" onclick="activateTool('tracker')" id="tracker-control">
+                        <div>🔧</div>
+                        <div>Hand Tool Tracker</div>
+                        <small>Tool Monitoring</small>
+                    </div>
+                </div>
+                <div id="tool-interface" style="margin-top: 20px; padding: 15px; background: #f8f6f0; border-radius: 8px; display: none;">
+                    <div id="tool-content"></div>
                 </div>
             </div>
 
-            <!-- Inventory Levels -->
+            <!-- Asset Monitoring -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">📦 Inventory Levels</div>
-                    <div class="status-indicator status-online" id="inventoryStatus">Live</div>
+                    <div class="card-title">
+                        <div class="card-icon">📊</div>
+                        <h3>Asset Monitoring</h3>
+                    </div>
                 </div>
-                <div id="inventoryLevels">
-                    <div class="loading">Loading inventory...</div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value">$2.3M</div>
+                        <div class="metric-label">Total Asset Value</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">97%</div>
+                        <div class="metric-label">Utilization Rate</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">$15.2K</div>
+                        <div class="metric-label">Monthly Revenue</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2</div>
+                        <div class="metric-label">Alerts</div>
+                    </div>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot status-warning"></div>
+                    <span>Maintenance due: Excavator #201</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot status-online"></div>
+                    <span>All tracking systems operational</span>
                 </div>
             </div>
 
-            <!-- Recent Activity -->
+            <!-- Real-time Activity -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">📋 Recent Activity</div>
-                    <div class="status-indicator status-online" id="activityStatus">Live</div>
+                    <div class="card-title">
+                        <div class="card-icon">⚡</div>
+                        <h3>Real-time Activity</h3>
+                    </div>
                 </div>
-                <div class="activity-log" id="activityLog">
-                    <div class="loading">Loading activity...</div>
+                <div class="activity-log" id="activity-log">
+                    <div class="log-entry">
+                        <div>Chainsaw #045 checked out to Crew A</div>
+                        <div class="log-timestamp">2 minutes ago</div>
+                    </div>
+                    <div class="log-entry">
+                        <div>Low stock alert: Safety gloves (5 remaining)</div>
+                        <div class="log-timestamp">5 minutes ago</div>
+                    </div>
+                    <div class="log-entry">
+                        <div>Excavator #203 location updated: Oak Ave Project</div>
+                        <div class="log-timestamp">8 minutes ago</div>
+                    </div>
+                    <div class="log-entry">
+                        <div>Inventory item added: Hedge trimmer #112</div>
+                        <div class="log-timestamp">12 minutes ago</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modals -->
+    <div id="addInventoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Inventory Item</h2>
+            <form id="addInventoryForm">
+                <div class="form-group">
+                    <label for="item-name">Item Name:</label>
+                    <input type="text" id="item-name" name="itemName" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-quantity">Quantity:</label>
+                    <input type="number" id="item-quantity" name="quantity" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-location">Location:</label>
+                    <select id="item-location" name="location">
+                        <option value="Warehouse A">Warehouse A</option>
+                        <option value="Warehouse B">Warehouse B</option>
+                        <option value="Truck 1">Truck 1</option>
+                        <option value="Truck 2">Truck 2</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="item-category">Category:</label>
+                    <select id="item-category" name="category">
+                        <option value="Hand Tools">Hand Tools</option>
+                        <option value="Power Tools">Power Tools</option>
+                        <option value="Safety Equipment">Safety Equipment</option>
+                        <option value="Materials">Materials</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Add Item</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addInventoryModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="checkInOutModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Equipment Check In/Out</h2>
+            <form id="checkInOutForm">
+                <div class="form-group">
+                    <label for="equipment-id">Equipment ID:</label>
+                    <input type="text" id="equipment-id" name="equipmentId" required>
+                </div>
+                <div class="form-group">
+                    <label for="action-type">Action:</label>
+                    <select id="action-type" name="actionType">
+                        <option value="checkout">Check Out</option>
+                        <option value="checkin">Check In</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="crew-member">Crew Member:</label>
+                    <input type="text" id="crew-member" name="crewMember" required>
+                </div>
+                <div class="form-group">
+                    <label for="expected-return">Expected Return Date:</label>
+                    <input type="date" id="expected-return" name="expectedReturn">
+                </div>
+                <button type="submit" class="btn">Process</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('checkInOutModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="updateLocationModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Update Equipment Location</h2>
+            <form id="updateLocationForm">
+                <div class="form-group">
+                    <label for="location-equipment">Equipment:</label>
+                    <select id="location-equipment" name="equipment">
+                        <option value="crew-a">Crew A Equipment</option>
+                        <option value="crew-b">Crew B Equipment</option>
+                        <option value="excavator-201">Excavator #201</option>
+                        <option value="truck-fleet">Truck Fleet</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-location">New Location:</label>
+                    <input type="text" id="new-location" name="newLocation" required>
+                </div>
+                <div class="form-group">
+                    <label for="location-notes">Notes:</label>
+                    <textarea id="location-notes" name="notes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn">Update Location</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('updateLocationModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        class DashboardAPI {
-            constructor(webhookUrl, sheetsId, apiKey) {
-                this.webhookUrl = webhookUrl;
-                this.sheetsId = sheetsId;
-                this.apiKey = apiKey;
-                this.charts = {};
-            }
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
 
-            async makeRequest(url, options = {}) {
-                try {
-                    const headers = {
-                        'Content-Type': 'application/json',
-                        ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
-                    };
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
 
-                    const response = await fetch(url, {
-                        ...options,
-                        headers: { ...headers, ...options.headers }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    return await response.json();
-                } catch (error) {
-                    console.error('API request failed:', error);
-                    throw error;
-                }
-            }
-
-            async fetchMetrics() {
-                try {
-                    const response = await this.makeRequest(`${this.webhookUrl}/metrics`);
-                    return response.data || response;
-                } catch (error) {
-                    return this.getFallbackMetrics();
-                }
-            }
-
-            async fetchJobs() {
-                try {
-                    const response = await this.makeRequest(`${this.webhookUrl}/jobs`);
-                    return response.data || response;
-                } catch (error) {
-                    return this.getFallbackJobs();
-                }
-            }
-
-            async fetchEquipment() {
-                try {
-                    const response = await this.makeRequest(`${this.webhookUrl}/equipment`);
-                    return response.data || response;
-                } catch (error) {
-                    return this.getFallbackEquipment();
-                }
-            }
-
-            async fetchInventory() {
-                try {
-                    const response = await this.makeRequest(`${this.webhookUrl}/inventory`);
-                    return response.data || response;
-                } catch (error) {
-                    return this.getFallbackInventory();
-                }
-            }
-
-            async fetchActivity() {
-                try {
-                    const response = await this.makeRequest(`${this.webhookUrl}/activity`);
-                    return response.data || response;
-                } catch (error) {
-                    return this.getFallbackActivity();
-                }
-            }
-
-            async fetchRevenueData() {
-                try {
-                    const response = await this.makeRequest(`${this.webhookUrl}/revenue`);
-                    return response.data || response;
-                } catch (error) {
-                    return this.getFallbackRevenue();
-                }
-            }
-
-            async fetchGoogleSheetsData(range) {
-                try {
-                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${this.sheetsId}/values/${range}?key=${this.apiKey}`;
-                    const response = await this.makeRequest(url);
-                    return response.values || [];
-                } catch (error) {
-                    console.error('Google Sheets fetch failed:', error);
-                    return [];
-                }
-            }
-
-            getFallbackMetrics() {
-                return {
-                    totalRevenue: Math.floor(Math.random() * 50000) + 150000,
-                    activeJobs: Math.floor(Math.random() * 15) + 8,
-                    completedJobs: Math.floor(Math.random() * 20) + 45,
-                    equipmentOperational: Math.floor(Math.random() * 3) + 12,
-                    pendingQuotes: Math.floor(Math.random() * 10) + 5
-                };
-            }
-
-            getFallbackJobs() {
-                return [
-                    { id: 'J001', client: 'Green Valley Resort', location: 'Downtown', status: 'In Progress', completion: 75 },
-                    { id: 'J002', client: 'City Park Project', location: 'North Side', status: 'Planning', completion: 25 },
-                    { id: 'J003', client: 'Residential Garden', location: 'Suburbs', status: 'In Progress', completion: 90 }
-                ];
-            }
-
-            getFallbackEquipment() {
-                return [
-                    { name: 'Excavator #1', status: 'operational', location: 'Site A', lastMaintenance: '2024-01-15' },
-                    { name: 'Truck #2', status: 'operational', location: 'Depot', lastMaintenance: '2024-01-10' },
-                    { name: 'Mower #3', status: 'maintenance', location: 'Shop', lastMaintenance: '2024-01-08' }
-                ];
-            }
-
-            getFallbackInventory() {
-                return [
-                    { item: 'Mulch (cubic yards)', current: 150, minimum: 100, maximum: 300 },
-                    { item: 'Top Soil (cubic yards)', current: 85, minimum: 50, maximum: 200 },
-                    { item: 'Plants & Shrubs', current: 45, minimum: 30, maximum: 100 },
-                    { item: 'Fertilizer (bags)', current: 25, minimum: 20, maximum: 80 }
-                ];
-            }
-
-            getFallbackActivity() {
-                return [
-                    { time: '10 minutes ago', activity: 'Job J001 - Progress updated to 75%' },
-                    { time: '25 minutes ago', activity: 'New quote request from ABC Corp' },
-                    { time: '1 hour ago', activity: 'Equipment maintenance completed on Truck #2' },
-                    { time: '2 hours ago', activity: 'Inventory restocked - Mulch delivery received' }
-                ];
-            }
-
-            getFallbackRevenue() {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                const data = months.map(() => Math.floor(Math.random() * 30000) + 20000);
-                return { labels: months, data };
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
             }
         }
 
-        class Dashboard {
-            constructor() {
-                this.api = new DashboardAPI('https://eov2ibw4y5sh983.m.pipedream.net', '1bP8INduRQPqCXNMg_qr0pxAkWyhkg4QgNpM6wDAR938', 'undefined');
-                this.refreshInterval = 30 * 1000;
-                this.init();
+        // Close modal when clicking X
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.onclick = function() {
+                this.closest('.modal').style.display = 'none';
             }
+        });
 
-            async init() {
-                await this.loadAllData();
-                this.startAutoRefresh();
-                this.updateLastUpdated();
-            }
-
-            async loadAllData() {
-                try {
-                    await Promise.all([
-                        this.loadMetrics(),
-                        this.loadJobs(),
-                        this.loadEquipment(), 
-                        this.loadInventory(),
-                        this.loadActivity(),
-                        this.loadRevenueChart()
-                    ]);
-                } catch (error) {
-                    console.error('Error loading dashboard data:', error);
-                }
-            }
-
-            async loadMetrics() {
-                try {
-                    const metrics = await this.api.fetchMetrics();
-                    const container = document.getElementById('keyMetrics');
-                    
-                    container.innerHTML = `
-                        <div class="metric">
-                            <span>Total Revenue (YTD)</span>
-                            <span class="metric-value">$${metrics.totalRevenue?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div class="metric">
-                            <span>Active Jobs</span>
-                            <span class="metric-value">${metrics.activeJobs || 0}</span>
-                        </div>
-                        <div class="metric">
-                            <span>Completed Jobs</span>
-                            <span class="metric-value">${metrics.completedJobs || 0}</span>
-                        </div>
-                        <div class="metric">
-                            <span>Equipment Operational</span>
-                            <span class="metric-value">${metrics.equipmentOperational || 0}/${(metrics.equipmentOperational || 0) + 1}</span>
-                        </div>
-                        <div class="metric">
-                            <span>Pending Quotes</span>
-                            <span class="metric-value">${metrics.pendingQuotes || 0}</span>
+        // Tool control functions
+        function activateTool(tool) {
+            // Reset all controls
+            document.querySelectorAll('.tool-control').forEach(control => {
+                control.classList.remove('active');
+            });
+            
+            // Activate selected tool
+            document.getElementById(tool + '-control').classList.add('active');
+            
+            const toolInterface = document.getElementById('tool-interface');
+            const toolContent = document.getElementById('tool-content');
+            
+            toolInterface.style.display = 'block';
+            
+            switch(tool) {
+                case 'chat':
+                    toolContent.innerHTML = `
+                        <h4>🤖 Inventory Chat Assistant</h4>
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <div style="margin-bottom: 10px;"><strong>AI:</strong> Hello! I can help you with inventory questions, stock levels, and item locations. What would you like to know?</div>
+                            <input type="text" placeholder="Ask about inventory..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                     `;
-                    
-                    document.getElementById('metricsStatus').className = 'status-indicator status-online';
-                } catch (error) {
-                    this.showError('keyMetrics', 'Failed to load metrics');
-                    document.getElementById('metricsStatus').className = 'status-indicator status-offline';
-                }
-            }
-
-            async loadJobs() {
-                try {
-                    const jobs = await this.api.fetchJobs();
-                    const container = document.getElementById('activeJobs');
-                    
-                    if (Array.isArray(jobs) && jobs.length > 0) {
-                        container.innerHTML = jobs.map(job => `
-                            <div class="metric">
-                                <div>
-                                    <strong>${job.client || 'Unknown Client'}</strong><br>
-                                    <small>${job.location || 'Unknown Location'} - ${job.status || 'Unknown Status'}</small>
-                                </div>
-                                <span class="metric-value">${job.completion || 0}%</span>
+                    break;
+                case 'scheduler':
+                    toolContent.innerHTML = `
+                        <h4>📅 Crew Scheduler</h4>
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <div>Next Scheduled Tasks:</div>
+                            <div style="margin: 10px 0; padding: 8px; background: #f0f0f0; border-radius: 4px;">
+                                <strong>Crew A:</strong> Main Street Landscaping - 9:00 AM
                             </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = '<div class="metric"><span>No active jobs</span></div>';
-                    }
-                    
-                    document.getElementById('jobsStatus').className = 'status-indicator status-online';
-                } catch (error) {
-                    this.showError('activeJobs', 'Failed to load jobs');
-                    document.getElementById('jobsStatus').className = 'status-indicator status-offline';
-                }
-            }
-
-            async loadEquipment() {
-                try {
-                    const equipment = await this.api.fetchEquipment();
-                    const container = document.getElementById('equipmentList');
-                    
-                    if (Array.isArray(equipment) && equipment.length > 0) {
-                        container.innerHTML = equipment.map(item => `
-                            <div class="metric">
-                                <div>
-                                    <strong>${item.name || 'Unknown Equipment'}</strong><br>
-                                    <small>${item.location || 'Unknown Location'}</small>
-                                </div>
-                                <span class="status-indicator ${item.status === 'operational' ? 'status-online' : 'status-offline'}">
-                                    ${item.status || 'Unknown'}
-                                </span>
+                            <div style="margin: 10px 0; padding: 8px; background: #f0f0f0; border-radius: 4px;">
+                                <strong>Crew B:</strong> Oak Avenue Project - 10:30 AM
                             </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = '<div class="metric"><span>No equipment data</span></div>';
-                    }
-                    
-                    document.getElementById('equipmentStatus').className = 'status-indicator status-online';
-                } catch (error) {
-                    this.showError('equipmentList', 'Failed to load equipment');
-                    document.getElementById('equipmentStatus').className = 'status-indicator status-offline';
-                }
-            }
-
-            async loadInventory() {
-                try {
-                    const inventory = await this.api.fetchInventory();
-                    const container = document.getElementById('inventoryLevels');
-                    
-                    if (Array.isArray(inventory) && inventory.length > 0) {
-                        container.innerHTML = inventory.map(item => {
-                            const percentage = ((item.current || 0) / (item.maximum || 1)) * 100;
-                            const status = (item.current || 0) <= (item.minimum || 0) ? 'Low Stock' : 'OK';
-                            const statusClass = status === 'Low Stock' ? 'status-offline' : 'status-online';
-                            
-                            return `
-                                <div class="metric">
-                                    <div>
-                                        <strong>${item.item || 'Unknown Item'}</strong><br>
-                                        <small>${item.current || 0} / ${item.maximum || 0} units</small>
-                                    </div>
-                                    <span class="status-indicator ${statusClass}">${status}</span>
-                                </div>
-                            `;
-                        }).join('');
-                    } else {
-                        container.innerHTML = '<div class="metric"><span>No inventory data</span></div>';
-                    }
-                    
-                    document.getElementById('inventoryStatus').className = 'status-indicator status-online';
-                } catch (error) {
-                    this.showError('inventoryLevels', 'Failed to load inventory');
-                    document.getElementById('inventoryStatus').className = 'status-indicator status-offline';
-                }
-            }
-
-            async loadActivity() {
-                try {
-                    const activities = await this.api.fetchActivity();
-                    const container = document.getElementById('activityLog');
-                    
-                    if (Array.isArray(activities) && activities.length > 0) {
-                        container.innerHTML = activities.map(activity => `
-                            <div class="activity-item">
-                                <div class="activity-time">${activity.time || 'Unknown time'}</div>
-                                <div>${activity.activity || 'No description'}</div>
+                            <button class="btn">Add New Task</button>
+                        </div>
+                    `;
+                    break;
+                case 'tracker':
+                    toolContent.innerHTML = `
+                        <h4>🔧 Hand Tool Tracker</h4>
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <div>Quick Actions:</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+                                <button class="btn">Scan QR Code</button>
+                                <button class="btn">Report Missing</button>
+                                <button class="btn">Add New Tool</button>
+                                <button class="btn">Generate Report</button>
                             </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = '<div class="activity-item"><div>No recent activity</div></div>';
-                    }
-                    
-                    document.getElementById('activityStatus').className = 'status-indicator status-online';
-                } catch (error) {
-                    this.showError('activityLog', 'Failed to load activity');
-                    document.getElementById('activityStatus').className = 'status-indicator status-offline';
-                }
-            }
-
-            async loadRevenueChart() {
-                try {
-                    const revenueData = await this.api.fetchRevenueData();
-                    const ctx = document.getElementById('revenueChart').getContext('2d');
-                    
-                    if (this.charts.revenue) {
-                        this.charts.revenue.destroy();
-                    }
-                    
-                    this.charts.revenue = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: revenueData.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                            datasets: [{
-                                label: 'Monthly Revenue',
-                                data: revenueData.data || [25000, 30000, 28000, 35000, 32000, 38000],
-                                borderColor: '#4a7c59',
-                                backgroundColor: 'rgba(74, 124, 89, 0.1)',
-                                fill: true,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        callback: function(value) {
-                                            return '$' + value.toLocaleString();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                } catch (error) {
-                    console.error('Failed to load revenue chart:', error);
-                }
-            }
-
-            showError(containerId, message) {
-                const container = document.getElementById(containerId);
-                container.innerHTML = `<div class="error">${message}</div>`;
-            }
-
-            updateLastUpdated() {
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
-            }
-
-            startAutoRefresh() {
-                setInterval(() => {
-                    this.loadAllData();
-                    this.updateLastUpdated();
-                }, this.refreshInterval);
+                        </div>
+                    `;
+                    break;
             }
         }
 
-        // Initialize dashboard when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new Dashboard();
-        });
+        // Equipment functions
+        function rentEquipment(id) {
+            addActivity(`Equipment #${id} rented out`);
+            updateMetrics();
+        }
 
-        // Handle visibility change to pause/resume updates when tab is not visible
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                // Refresh data when tab becomes visible
-                if (window.dashboard) {
-                    window.dashboard.loadAllData();
+        function returnEquipment(id) {
+            addActivity(`Equipment #${id} returned`);
+            updateMetrics();
+        }
+
+        // Location functions
+        function showLocationDetails(crew, location) {
+            alert(`${crew}\nLocation: ${location}\nLast Update: ${new Date().toLocaleString()}`);
+        }
+
+        // Search function
+        function searchInventory(query) {
+            const inventoryItems = document.querySelectorAll('.inventory-item');
+            inventoryItems.forEach(item => {
+                const itemName = item.querySelector('.item-name').textContent.toLowerCase();
+                if (itemName.includes(query.toLowerCase())) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
                 }
+            });
+        }
+
+        // Form submissions
+        document.getElementById('addInventoryForm').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const itemName = formData.get('itemName');
+            addActivity(`New item added: ${itemName}`);
+            closeModal('addInventoryModal');
+            e.target.reset();
+            updateMetrics();
+        };
+
+        document.getElementById('checkInOutForm').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const equipment = formData.get('equipmentId');
+            const action = formData.get('actionType');
+            addActivity(`Equipment ${equipment} ${action === 'checkout' ? 'checked out' : 'checked in'}`);
+            closeModal('checkInOutModal');
+            e.target.reset();
+        };
+
+        document.getElementById('updateLocationForm').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const equipment = formData.get('equipment');
+            const location = formData.get('newLocation');
+            addActivity(`Location updated: ${equipment} moved to ${location}`);
+            closeModal('updateLocationModal');
+            e.target.reset();
+        };
+
+        // Utility functions
+        function addActivity(message) {
+            const activityLog = document.getElementById('activity-log');
+            const newEntry = document.createElement('div');
+            newEntry.className = 'log-entry';
+            newEntry.innerHTML = `
+                <div>${message}</div>
+                <div class="log-timestamp">Just now</div>
+            `;
+            activityLog.insertBefore(newEntry, activityLog.firstChild);
+            
+            // Keep only last 10 entries
+            const entries = activityLog.children;
+            if (entries.length > 10) {
+                activityLog.removeChild(entries[entries.length - 1]);
             }
-        });
+        }
+
+        function updateMetrics() {
+            // Simulate metric updates
+            const totalItems = document.getElementById('total-items');
+            const currentValue = parseInt(totalItems.textContent);
+            totalItems.textContent = currentValue + Math.floor(Math.random() * 3) - 1;
+        }
+
+        // Auto-update simulation
+        setInterval(() => {
+            const activities = [
+                'Automatic inventory sync completed',
+                'GPS location updated for mobile unit',
+                'Low stock threshold reached for item',
+                'Equipment maintenance reminder triggered',
+                'New rental request received'
+            ];
+            
+            const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+            addActivity(randomActivity);
+        }, 30000); // Every 30 seconds
+
+        // Initialize dashboard
+        console.log('Deep Roots Asset Management Dashboard initialized');
     </script>
 </body>
 </html>

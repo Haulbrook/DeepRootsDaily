@@ -8,6 +8,7 @@ import {
   Wrench,
   Calendar,
   Hammer,
+  MapPin,
   Settings,
   Moon,
   Sun,
@@ -56,6 +57,12 @@ const navigation = [
     href: '/tools',
     icon: Hammer,
     description: 'Hand Tools',
+  },
+  {
+    title: 'Chess Map',
+    href: '/chessmap',
+    icon: MapPin,
+    description: 'Crew Locations',
   },
 ]
 

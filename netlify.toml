@@ -1,0 +1,10 @@
+# Static site - no build needed
+[build]
+  publish = "."
+  command = "echo 'Static site - no build required'"
+
+# Serve index.html as the main page
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200

@@ -1,61 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   DEEP ROOTS OPERATIONS THEME
+   Forest greens & earth tones
+============================================ */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ===== Core Tailwind CSS Variables ===== */
+    --background: 210 20% 98%;
+    --foreground: 0 0% 13%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 13%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142.1 76.2% 36.3%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --popover-foreground: 0 0% 13%;
+
+    /* Primary - Forest Green (#3A7D5C) */
+    --primary: 153 36% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Earth/Clay (#8B5A3C) */
+    --secondary: 23 40% 39%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted backgrounds */
+    --muted: 210 20% 96%;
+    --muted-foreground: 0 0% 46%;
+
+    /* Accent - Coffee/Bark (#5D4037) */
+    --accent: 14 29% 29%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive - Error Red */
+    --destructive: 0 65% 47%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 153 36% 36%;
+    --radius: 0.75rem;
+
+    /* Chart colors */
+    --chart-1: 153 36% 36%;
+    --chart-2: 23 40% 39%;
+    --chart-3: 14 29% 29%;
+    --chart-4: 26 29% 49%;
+    --chart-5: 158 47% 20%;
+
+    /* ===== Extended Deep Roots Variables ===== */
+
+    /* Primary shades */
+    --primary-darkest: 158 47% 20%;
+    --primary-dark: 158 35% 27%;
+    --primary-light: 153 36% 45%;
+
+    /* Secondary shades */
+    --secondary-dark: 15 26% 34%;
+    --secondary-light: 26 29% 49%;
+    --secondary-lighter: 15 17% 69%;
+
+    /* Accent shades */
+    --accent-darkest: 11 27% 19%;
+    --accent-dark: 11 26% 24%;
+    --accent-light: 15 18% 47%;
+
+    /* Semantic colors */
+    --success: 153 36% 36%;
+    --success-light: 138 44% 93%;
+    --warning: 26 29% 49%;
+    --warning-light: 33 100% 94%;
+    --error: 0 65% 47%;
+    --error-light: 0 100% 96%;
+    --info: 213 80% 42%;
+    --info-light: 214 95% 93%;
+
+    /* Surface colors */
+    --surface-primary: 0 0% 100%;
+    --surface-secondary: 210 20% 98%;
+    --surface-tertiary: 210 18% 96%;
+    --surface-hover: 0 0% 96%;
+
+    /* Sidebar specific */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 13%;
+    --sidebar-primary: 153 36% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 153 36% 95%;
+    --sidebar-accent-foreground: 158 35% 27%;
+    --sidebar-border: 0 0% 93%;
+    --sidebar-ring: 153 36% 36%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142.4 71.8% 29.2%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 0 0% 10%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    /* Primary - Forest Green (lighter for dark mode) */
+    --primary: 153 36% 45%;
+    --primary-foreground: 158 47% 10%;
+
+    /* Secondary - Earth/Clay */
+    --secondary: 23 40% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 69%;
+
+    /* Accent - Coffee/Bark (lighter for dark mode) */
+    --accent: 15 18% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 153 36% 40%;
+
+    /* Chart colors for dark mode */
+    --chart-1: 153 36% 50%;
+    --chart-2: 23 40% 50%;
+    --chart-3: 14 29% 40%;
+    --chart-4: 26 29% 55%;
+    --chart-5: 158 47% 35%;
+
+    /* Extended variables for dark mode */
+    --primary-darkest: 158 47% 15%;
+    --primary-dark: 158 35% 22%;
+    --primary-light: 153 36% 55%;
+
+    --secondary-dark: 15 26% 30%;
+    --secondary-light: 26 29% 55%;
+    --secondary-lighter: 15 17% 60%;
+
+    --accent-darkest: 11 27% 15%;
+    --accent-dark: 11 26% 20%;
+    --accent-light: 15 18% 55%;
+
+    --success: 153 36% 45%;
+    --success-light: 138 30% 15%;
+    --warning: 26 29% 55%;
+    --warning-light: 33 30% 15%;
+    --error: 0 62% 45%;
+    --error-light: 0 30% 15%;
+    --info: 213 70% 55%;
+    --info-light: 214 30% 15%;
+
+    --surface-primary: 0 0% 10%;
+    --surface-secondary: 0 0% 14%;
+    --surface-tertiary: 0 0% 18%;
+    --surface-hover: 0 0% 20%;
+
+    /* Sidebar dark mode */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 153 36% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 153 36% 15%;
+    --sidebar-accent-foreground: 153 36% 70%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 153 36% 40%;
   }
 }
 
@@ -63,8 +179,194 @@
   * {
     border-color: hsl(var(--border));
   }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/* ============================================
+   DEEP ROOTS CUSTOM COMPONENTS
+============================================ */
+
+@layer components {
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary-darkest)) 0%, hsl(var(--primary-dark)) 50%, hsl(var(--primary)) 100%);
+  }
+
+  .bg-gradient-secondary {
+    background: linear-gradient(135deg, hsl(var(--primary-dark)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .bg-gradient-card {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--secondary) / 0.08) 100%);
+  }
+
+  .bg-gradient-subtle {
+    background: linear-gradient(180deg, hsl(var(--surface-primary)) 0%, hsl(var(--surface-secondary)) 100%);
+  }
+
+  /* Custom shadows */
+  .shadow-primary {
+    box-shadow: 0 4px 14px hsl(var(--primary) / 0.25);
+  }
+
+  .shadow-hover {
+    box-shadow: 0 12px 24px hsl(var(--primary) / 0.15), 0 6px 12px hsl(var(--secondary) / 0.1);
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px hsl(var(--primary) / 0.15), 0 6px 12px hsl(var(--secondary) / 0.1);
+  }
+
+  /* Accent border cards */
+  .card-accent {
+    border-top: 4px solid hsl(var(--primary));
+  }
+
+  .card-accent-success {
+    border-top-color: hsl(var(--success));
+  }
+
+  .card-accent-warning {
+    border-top-color: hsl(var(--warning));
+  }
+
+  .card-accent-error {
+    border-top-color: hsl(var(--error));
+  }
+
+  .card-accent-info {
+    border-top-color: hsl(var(--info));
+  }
+
+  /* Status badges */
+  .badge-success {
+    background-color: hsl(var(--success-light));
+    color: hsl(var(--success));
+  }
+
+  .badge-warning {
+    background-color: hsl(var(--warning-light));
+    color: hsl(var(--warning));
+  }
+
+  .badge-error {
+    background-color: hsl(var(--error-light));
+    color: hsl(var(--error));
+  }
+
+  .badge-info {
+    background-color: hsl(var(--info-light));
+    color: hsl(var(--info));
+  }
+
+  /* Alert styles */
+  .alert-success {
+    border-left: 4px solid hsl(var(--success));
+    background-color: hsl(var(--success-light));
+  }
+
+  .alert-warning {
+    border-left: 4px solid hsl(var(--warning));
+    background-color: hsl(var(--warning-light));
+  }
+
+  .alert-error {
+    border-left: 4px solid hsl(var(--error));
+    background-color: hsl(var(--error-light));
+  }
+
+  .alert-info {
+    border-left: 4px solid hsl(var(--info));
+    background-color: hsl(var(--info-light));
+  }
+
+  /* Button primary gradient */
+  .btn-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary-darkest)) 0%, hsl(var(--primary-dark)) 50%, hsl(var(--primary)) 100%);
+    color: white;
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px hsl(var(--primary) / 0.25);
+  }
+
+  .btn-gradient:active {
+    transform: translateY(0);
+  }
+
+  /* Progress bar */
+  .progress-success {
+    background-color: hsl(var(--success));
+  }
+
+  .progress-warning {
+    background-color: hsl(var(--warning));
+  }
+
+  .progress-error {
+    background-color: hsl(var(--error));
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.5) 50%, hsl(var(--muted)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+============================================ */
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .animate-fadeIn {
+    animation: fadeIn 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slideUp {
+    animation: slideUp 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slideDown {
+    animation: slideDown 250ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }

@@ -58,7 +58,7 @@ The script creates and manages these sheets:
 ## Links
 
 - **Google Sheet**: [Crew Scheduler Data](https://docs.google.com/spreadsheets/d/1y89_Bq4O_bG_MKn3E9ZnJ4jngn9puDHrNKWcuOLpgN4/edit?gid=101243881#gid=101243881)
-- **Web App**: [Crew Scheduler](https://script.google.com/macros/s/AKfycbwV8EIR7jPTZn0bZ7Jgv3Pj-sn13q_Nz4kueZ9pppX_PGZrRbYjieUfkZWA41WLD2c/exec)
+- **Web App**: [Crew Scheduler](https://script.google.com/macros/s/AKfycby8emVVFfqRt8W6FrUHeXKasZtUtFUhcH2jCEPZu_ykNtLE50209MENUb0k3gwaYJI/exec)
 
 ## License
 

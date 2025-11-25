@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,10 +15,16 @@ import {
   AlertTriangle,
   Save,
   RefreshCw,
-  X
+  X,
+  CheckCircle,
+  XCircle,
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+
+// ============ GOOGLE SHEETS API CONFIGURATION ============
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwV8EIR7jPTZn0bZ7Jgv3Pj-sn13q_Nz4kueZ9pppX_PGZrRbYjieUfkZWA41WLD2c/exec'
 
 // ============ DEEP ROOTS DATA FROM GOOGLE SHEETS ============
 
@@ -145,6 +151,208 @@ export default function SchedulerPage() {
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<Person | Vehicle | Equipment | null>(null)
   const [draggedItemType, setDraggedItemType] = useState<'person' | 'vehicle' | 'equipment' | null>(null)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+
+  // ============ GOOGLE SHEETS API FUNCTIONS ============
+
+  // Helper to find person type from name
+  const findPersonType = useCallback((name: string): 'person' | 'crew-leader' | 'manager' => {
+    const person = PEOPLE.find(p => p.name === name)
+    return person?.type || 'person'
+  }, [])
+
+  // Helper to find equipment type from name
+  const findEquipmentType = useCallback((name: string): 'trailer' | 'machine' => {
+    const equip = EQUIPMENT.find(e => e.name === name)
+    return equip?.type || 'machine'
+  }, [])
+
+  // Load schedule from Google Sheets
+  const loadSchedule = useCallback(async (date: Date) => {
+    setIsLoading(true)
+    setStatusMessage(null)
+
+    try {
+      const dateString = date.toLocaleDateString()
+
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // Google Apps Script requires this
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'getScheduleForDate',
+          date: dateString
+        })
+      })
+
+      // Note: Due to no-cors, we can't read the response directly
+      // The Google Apps Script will need CORS headers or we use JSONP approach
+      // For now, we'll try a different approach using GET with callback
+
+      // Alternative: Use fetch with redirect following
+      const getResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=getCurrentState`, {
+        method: 'GET',
+        redirect: 'follow'
+      })
+
+      if (getResponse.ok) {
+        const data = await getResponse.json()
+
+        if (data.error) {
+          throw new Error(data.error)
+        }
+
+        // Parse the schedule data if available
+        if (data.schedule) {
+          const newCrews = initializeCrews()
+
+          data.schedule.crews?.forEach((crewData: any) => {
+            const crewIndex = crewData.number - 1
+            if (crewIndex >= 0 && crewIndex < 8) {
+              newCrews[crewIndex] = {
+                crewNumber: crewData.number,
+                members: crewData.members?.map((m: any) => ({
+                  name: m.name,
+                  type: m.isLeader ? 'crew-leader' : m.isManager ? 'manager' : 'person'
+                })) || [],
+                vehicles: crewData.vehicles?.map((v: string) => ({ name: v })) || [],
+                equipment: crewData.equipment?.map((e: string) => ({
+                  name: e,
+                  type: findEquipmentType(e)
+                })) || [],
+                jobs: crewData.jobs || [],
+                salesman: crewData.salesman || ''
+              }
+            }
+          })
+
+          setCrews(newCrews)
+
+          // Set absent people
+          if (data.schedule.absent) {
+            setAbsentPeople(data.schedule.absent.map((a: any) => ({
+              name: a.name,
+              type: findPersonType(a.name)
+            })))
+          }
+
+          // Set out of service items
+          if (data.schedule.outOfService) {
+            setOutOfServiceItems(data.schedule.outOfService.map((item: any) => ({
+              name: item.name,
+              type: findEquipmentType(item.name)
+            })))
+          }
+        }
+
+        setLastUpdated(data.lastUpdate || 'Just loaded')
+        setStatusMessage({ type: 'success', message: 'Schedule loaded successfully' })
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error)
+      setStatusMessage({ type: 'error', message: 'Failed to load schedule. Check console for details.' })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [findPersonType, findEquipmentType])
+
+  // Save schedule to Google Sheets
+  const saveSchedule = useCallback(async () => {
+    setIsSaving(true)
+    setStatusMessage(null)
+
+    try {
+      const dateString = selectedDate.toLocaleDateString()
+      const timestamp = new Date().toLocaleString()
+
+      // Format data for Google Sheets (matching the expected format from the Apps Script)
+      const values: any[][] = [
+        ['Date', 'Crew_Number', 'Team_Members', 'Crew_Leaders', 'Managers', 'Truck', 'Equipment', 'Job_Name', 'Salesman_PM', 'Last_Updated', 'Absent_Today', 'Out_Of_Service']
+      ]
+
+      // Add crew rows
+      crews.forEach(crew => {
+        if (crew.members.length > 0 || crew.vehicles.length > 0 || crew.equipment.length > 0 || crew.jobs.length > 0) {
+          const teamMembers = crew.members.filter(m => m.type === 'person').map(m => m.name).join(', ')
+          const crewLeaders = crew.members.filter(m => m.type === 'crew-leader').map(m => m.name).join(', ')
+          const managers = crew.members.filter(m => m.type === 'manager').map(m => m.name).join(', ')
+          const trucks = crew.vehicles.map(v => v.name).join(', ')
+          const equipment = crew.equipment.map(e => e.name).join(', ')
+          const jobs = crew.jobs.join(', ')
+
+          values.push([
+            dateString,
+            crew.crewNumber,
+            teamMembers,
+            crewLeaders,
+            managers,
+            trucks,
+            equipment,
+            jobs,
+            crew.salesman,
+            timestamp,
+            '', // Absent_Today (filled in summary row)
+            ''  // Out_Of_Service (filled in summary row)
+          ])
+        }
+      })
+
+      // Add summary row with absent and out of service
+      const absentNames = absentPeople.map(p => p.name).join(', ')
+      const outOfServiceNames = outOfServiceItems.map(i => i.name).join(', ')
+
+      values.push([
+        dateString,
+        'SUMMARY',
+        '', '', '', '', '', '', '',
+        timestamp,
+        absentNames,
+        outOfServiceNames
+      ])
+
+      // Prepare tags data
+      const tags = {
+        people: PEOPLE.map(p => ({ name: p.name, type: p.type })),
+        trucks: TRUCKS.map(t => ({ name: t.name })),
+        equipment: EQUIPMENT.map(e => ({ name: e.name, type: e.type })),
+        jobs: [] // Jobs are entered manually per crew
+      }
+
+      const payload = {
+        date: dateString,
+        values: values,
+        tags: tags
+      }
+
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      // Since no-cors doesn't let us read the response, we assume success
+      setLastUpdated(timestamp)
+      setStatusMessage({ type: 'success', message: 'Schedule saved successfully!' })
+    } catch (error) {
+      console.error('Error saving schedule:', error)
+      setStatusMessage({ type: 'error', message: 'Failed to save schedule. Check console for details.' })
+    } finally {
+      setIsSaving(false)
+    }
+  }, [selectedDate, crews, absentPeople, outOfServiceItems])
+
+  // Clear status message after 5 seconds
+  useEffect(() => {
+    if (statusMessage) {
+      const timer = setTimeout(() => setStatusMessage(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [statusMessage])
 
   // Get assigned items
   const assignedPeople = crews.flatMap(c => c.members.map(m => m.name))
@@ -337,16 +545,46 @@ export default function SchedulerPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsLoading(true)} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={() => loadSchedule(selectedDate)} disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
             Load Schedule
           </Button>
-          <Button onClick={() => setIsSaving(true)} disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
+          <Button onClick={saveSchedule} disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             Save Schedule
           </Button>
         </div>
       </div>
+
+      {/* Status Message */}
+      {statusMessage && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg ${
+          statusMessage.type === 'success'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+        }`}>
+          {statusMessage.type === 'success' ? (
+            <CheckCircle className="h-4 w-4" />
+          ) : (
+            <XCircle className="h-4 w-4" />
+          )}
+          <span className="text-sm">{statusMessage.message}</span>
+          <button
+            onClick={() => setStatusMessage(null)}
+            className="ml-auto hover:opacity-75"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-5">

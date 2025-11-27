@@ -1,14 +1,10 @@
+# Static site - no build needed
 [build]
-  command = "npm run build"
-  publish = ".next"
+  publish = "."
+  command = "echo 'Static site - no build required'"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
-[build.environment]
-  NODE_VERSION = "20"
-
+# Serve index.html as the main page
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/index.html"
   status = 200

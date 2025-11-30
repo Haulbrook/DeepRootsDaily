@@ -378,20 +378,34 @@ export default function SchedulerPage() {
   const totalAbsent = absentPeople.length
   const crewsInUse = crews.filter(c => c.members.length > 0).length
 
-  // Drag and drop handlers
-  function handleDragStart(item: Person | Vehicle | Equipment, type: 'person' | 'vehicle' | 'equipment') {
+  // Drag and drop handlers - FIXED: HTML5 Drag API requires dataTransfer.setData()
+  const [dragSourceCrew, setDragSourceCrew] = useState<number | null>(null)
+
+  function handleDragStart(
+    e: React.DragEvent,
+    item: Person | Vehicle | Equipment,
+    type: 'person' | 'vehicle' | 'equipment',
+    sourceCrew: number | null = null
+  ) {
+    // Required for HTML5 drag and drop to work
+    e.dataTransfer.setData('text/plain', JSON.stringify({ item, type, sourceCrew }))
+    e.dataTransfer.effectAllowed = 'move'
+
     setDraggedItem(item)
     setDraggedItemType(type)
+    setDragSourceCrew(sourceCrew)
   }
 
   function handleDragEnd() {
     setDraggedItem(null)
     setDraggedItemType(null)
     setActiveDropZone(null)
+    setDragSourceCrew(null)
   }
 
   function handleDragOver(e: React.DragEvent, zoneId: string) {
     e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
     setActiveDropZone(zoneId)
   }
 
@@ -399,9 +413,27 @@ export default function SchedulerPage() {
     setActiveDropZone(null)
   }
 
-  function handleDrop(crewNumber: number, dropType: 'person' | 'vehicle' | 'equipment') {
+  function handleDrop(e: React.DragEvent, crewNumber: number, dropType: 'person' | 'vehicle' | 'equipment') {
+    e.preventDefault()
     if (!draggedItem || !draggedItemType) return
     if (draggedItemType !== dropType) return
+
+    // If dragging from another crew, remove from source first
+    if (dragSourceCrew !== null && dragSourceCrew !== crewNumber) {
+      setCrews(prev => prev.map(crew => {
+        if (crew.crewNumber !== dragSourceCrew) return crew
+        if (dropType === 'person') {
+          return { ...crew, members: crew.members.filter(m => m.name !== (draggedItem as Person).name) }
+        }
+        if (dropType === 'vehicle') {
+          return { ...crew, vehicles: crew.vehicles.filter(v => v.name !== (draggedItem as Vehicle).name) }
+        }
+        if (dropType === 'equipment') {
+          return { ...crew, equipment: crew.equipment.filter(eq => eq.name !== (draggedItem as Equipment).name) }
+        }
+        return crew
+      }))
+    }
 
     setCrews(prev => prev.map(crew => {
       if (crew.crewNumber !== crewNumber) return crew
@@ -535,31 +567,31 @@ export default function SchedulerPage() {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Header - Compact */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Crew Scheduler</h1>
-          <p className="text-muted-foreground">
-            Assign crews, trucks, and equipment for {selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
+          <h1 className="text-xl font-bold tracking-tight">Crew Scheduler</h1>
+          <p className="text-xs text-muted-foreground">
+            {selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => loadSchedule(selectedDate)} disabled={isLoading}>
+        <div className="flex gap-1">
+          <Button variant="outline" size="sm" onClick={() => loadSchedule(selectedDate)} disabled={isLoading}>
             {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
+              <RefreshCw className="mr-1 h-3 w-3" />
             )}
-            Load Schedule
+            Load
           </Button>
-          <Button onClick={saveSchedule} disabled={isSaving}>
+          <Button size="sm" onClick={saveSchedule} disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             ) : (
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-1 h-3 w-3" />
             )}
-            Save Schedule
+            Save
           </Button>
         </div>
       </div>
@@ -586,67 +618,62 @@ export default function SchedulerPage() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Crews</CardTitle>
+      {/* Stats - Compact */}
+      <div className="grid gap-2 grid-cols-5">
+        <Card className="py-2">
+          <CardContent className="p-2 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Active Crews</p>
+              <p className="text-lg font-bold">{crewsInUse}<span className="text-xs font-normal text-muted-foreground">/8</span></p>
+            </div>
             <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{crewsInUse}</div>
-            <p className="text-xs text-muted-foreground">of 8 crews</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assigned</CardTitle>
+        <Card className="py-2">
+          <CardContent className="p-2 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Assigned</p>
+              <p className="text-lg font-bold">{totalAssigned}</p>
+            </div>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAssigned}</div>
-            <p className="text-xs text-muted-foreground">people working</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available</CardTitle>
+        <Card className="py-2">
+          <CardContent className="p-2 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Available</p>
+              <p className="text-lg font-bold">{totalAvailable}</p>
+            </div>
             <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAvailable}</div>
-            <p className="text-xs text-muted-foreground">unassigned</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Absent</CardTitle>
+        <Card className="py-2">
+          <CardContent className="p-2 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Absent</p>
+              <p className="text-lg font-bold">{totalAbsent}</p>
+            </div>
             <UserX className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAbsent}</div>
-            <p className="text-xs text-muted-foreground">off today</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last Updated</CardTitle>
+        <Card className="py-2">
+          <CardContent className="p-2 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Updated</p>
+              <p className="text-[10px] font-medium truncate max-w-[100px]">{lastUpdated}</p>
+            </div>
             <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium truncate">{lastUpdated}</div>
-            <p className="text-xs text-muted-foreground">schedule saved</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-4">
+      <div className="grid gap-3 xl:grid-cols-4">
         {/* Calendar and Available Resources */}
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Mini Calendar */}
           <Card>
             <CardHeader className="pb-2">
@@ -706,11 +733,12 @@ export default function SchedulerPage() {
                   <div
                     key={person.name}
                     draggable
-                    onDragStart={() => handleDragStart(person, 'person')}
+                    onDragStart={(e) => handleDragStart(e, person, 'person', null)}
                     onDragEnd={handleDragEnd}
                     className={`
-                      cursor-grab active:cursor-grabbing text-xs px-2 py-1 rounded-full
-                      flex items-center gap-1 ${getPersonTypeColor(person.type)}
+                      cursor-grab active:cursor-grabbing text-xs px-2 py-0.5 rounded-full
+                      flex items-center gap-1 select-none ${getPersonTypeColor(person.type)}
+                      ${draggedItem && (draggedItem as Person).name === person.name ? 'opacity-50' : ''}
                     `}
                   >
                     {person.name}
@@ -737,9 +765,13 @@ export default function SchedulerPage() {
                   <div
                     key={truck.name}
                     draggable
-                    onDragStart={() => handleDragStart(truck, 'vehicle')}
+                    onDragStart={(e) => handleDragStart(e, truck, 'vehicle', null)}
                     onDragEnd={handleDragEnd}
-                    className="cursor-grab active:cursor-grabbing text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    className={`
+                      cursor-grab active:cursor-grabbing text-xs px-2 py-0.5 rounded-full select-none
+                      bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                      ${draggedItem && (draggedItem as Vehicle).name === truck.name ? 'opacity-50' : ''}
+                    `}
                   >
                     {truck.name}
                   </div>
@@ -762,9 +794,13 @@ export default function SchedulerPage() {
                   <div
                     key={equip.name}
                     draggable
-                    onDragStart={() => handleDragStart(equip, 'equipment')}
+                    onDragStart={(e) => handleDragStart(e, equip, 'equipment', null)}
                     onDragEnd={handleDragEnd}
-                    className="cursor-grab active:cursor-grabbing text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                    className={`
+                      cursor-grab active:cursor-grabbing text-xs px-2 py-0.5 rounded-full select-none
+                      bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200
+                      ${draggedItem && (draggedItem as Equipment).name === equip.name ? 'opacity-50' : ''}
+                    `}
                   >
                     {equip.name}
                   </div>
@@ -825,60 +861,68 @@ export default function SchedulerPage() {
           </Card>
         </div>
 
-        {/* Crew Assignments Grid */}
+        {/* Crew Assignments Grid - Compact for full screen */}
         <div className="xl:col-span-3">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 2xl:grid-cols-4">
             {crews.map((crew) => (
               <Card
                 key={crew.crewNumber}
-                className={`${crew.members.length > 0 ? 'card-accent' : 'opacity-75'}`}
+                className={`${crew.members.length > 0 ? 'card-accent' : 'opacity-75'} shadow-sm`}
               >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center justify-between">
+                <CardHeader className="py-1.5 px-2">
+                  <CardTitle className="text-sm flex items-center justify-between">
                     Crew {crew.crewNumber}
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {crew.members.length} members
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {crew.members.length}p
                     </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-1.5 px-2 pb-2">
                   {/* People Drop Zone */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                      <Users className="h-3 w-3" /> Team Members
+                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-0.5">
+                      <Users className="h-2.5 w-2.5" /> Team
                     </p>
                     <div
                       onDragOver={(e) => handleDragOver(e, `crew-${crew.crewNumber}-people`)}
                       onDragLeave={handleDragLeave}
-                      onDrop={() => handleDrop(crew.crewNumber, 'person')}
+                      onDrop={(e) => handleDrop(e, crew.crewNumber, 'person')}
                       className={`
-                        min-h-[40px] p-2 rounded border-2 border-dashed transition-colors
+                        min-h-[28px] p-1 rounded border-2 border-dashed transition-all
                         ${activeDropZone === `crew-${crew.crewNumber}-people` && draggedItemType === 'person'
-                          ? 'border-primary bg-primary/10'
-                          : 'border-muted'
+                          ? 'border-primary bg-primary/10 scale-[1.02]'
+                          : 'border-muted hover:border-muted-foreground/30'
                         }
                       `}
                     >
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-0.5">
                         {crew.members.map((member) => (
                           <div
                             key={member.name}
-                            className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${getPersonTypeColor(member.type)}`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, member, 'person', crew.crewNumber)}
+                            onDragEnd={handleDragEnd}
+                            className={`
+                              text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5
+                              cursor-grab active:cursor-grabbing select-none
+                              ${getPersonTypeColor(member.type)}
+                              ${draggedItem && (draggedItem as Person).name === member.name ? 'opacity-50' : ''}
+                            `}
                           >
                             {member.name}
                             {getPersonTypeBadge(member.type) && (
-                              <span className="text-[10px] opacity-75">({getPersonTypeBadge(member.type)})</span>
+                              <span className="text-[8px] opacity-75">{getPersonTypeBadge(member.type)}</span>
                             )}
                             <button
-                              onClick={() => removeFromCrew(crew.crewNumber, member.name, 'person')}
-                              className="hover:opacity-75"
+                              onClick={(e) => { e.stopPropagation(); removeFromCrew(crew.crewNumber, member.name, 'person'); }}
+                              className="hover:opacity-75 ml-0.5"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-2.5 w-2.5" />
                             </button>
                           </div>
                         ))}
                         {crew.members.length === 0 && (
-                          <span className="text-xs text-muted-foreground">Drop people here</span>
+                          <span className="text-[10px] text-muted-foreground italic">Drop people</span>
                         )}
                       </div>
                     </div>
@@ -886,38 +930,46 @@ export default function SchedulerPage() {
 
                   {/* Vehicles Drop Zone */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                      <Truck className="h-3 w-3" /> Truck
+                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-0.5">
+                      <Truck className="h-2.5 w-2.5" /> Truck
                     </p>
                     <div
                       onDragOver={(e) => handleDragOver(e, `crew-${crew.crewNumber}-vehicle`)}
                       onDragLeave={handleDragLeave}
-                      onDrop={() => handleDrop(crew.crewNumber, 'vehicle')}
+                      onDrop={(e) => handleDrop(e, crew.crewNumber, 'vehicle')}
                       className={`
-                        min-h-[32px] p-2 rounded border-2 border-dashed transition-colors
+                        min-h-[24px] p-1 rounded border-2 border-dashed transition-all
                         ${activeDropZone === `crew-${crew.crewNumber}-vehicle` && draggedItemType === 'vehicle'
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-muted'
+                          ? 'border-blue-500 bg-blue-500/10 scale-[1.02]'
+                          : 'border-muted hover:border-muted-foreground/30'
                         }
                       `}
                     >
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-0.5">
                         {crew.vehicles.map((vehicle) => (
                           <div
                             key={vehicle.name}
-                            className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 flex items-center gap-1"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, vehicle, 'vehicle', crew.crewNumber)}
+                            onDragEnd={handleDragEnd}
+                            className={`
+                              text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5
+                              cursor-grab active:cursor-grabbing select-none
+                              bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                              ${draggedItem && (draggedItem as Vehicle).name === vehicle.name ? 'opacity-50' : ''}
+                            `}
                           >
                             {vehicle.name}
                             <button
-                              onClick={() => removeFromCrew(crew.crewNumber, vehicle.name, 'vehicle')}
-                              className="hover:opacity-75"
+                              onClick={(e) => { e.stopPropagation(); removeFromCrew(crew.crewNumber, vehicle.name, 'vehicle'); }}
+                              className="hover:opacity-75 ml-0.5"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-2.5 w-2.5" />
                             </button>
                           </div>
                         ))}
                         {crew.vehicles.length === 0 && (
-                          <span className="text-xs text-muted-foreground">Drop truck here</span>
+                          <span className="text-[10px] text-muted-foreground italic">Drop truck</span>
                         )}
                       </div>
                     </div>
@@ -925,66 +977,74 @@ export default function SchedulerPage() {
 
                   {/* Equipment Drop Zone */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                      <Wrench className="h-3 w-3" /> Equipment
+                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-0.5">
+                      <Wrench className="h-2.5 w-2.5" /> Equip
                     </p>
                     <div
                       onDragOver={(e) => handleDragOver(e, `crew-${crew.crewNumber}-equipment`)}
                       onDragLeave={handleDragLeave}
-                      onDrop={() => handleDrop(crew.crewNumber, 'equipment')}
+                      onDrop={(e) => handleDrop(e, crew.crewNumber, 'equipment')}
                       className={`
-                        min-h-[32px] p-2 rounded border-2 border-dashed transition-colors
+                        min-h-[24px] p-1 rounded border-2 border-dashed transition-all
                         ${activeDropZone === `crew-${crew.crewNumber}-equipment` && draggedItemType === 'equipment'
-                          ? 'border-amber-500 bg-amber-500/10'
-                          : 'border-muted'
+                          ? 'border-amber-500 bg-amber-500/10 scale-[1.02]'
+                          : 'border-muted hover:border-muted-foreground/30'
                         }
                       `}
                     >
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-0.5">
                         {crew.equipment.map((equip) => (
                           <div
                             key={equip.name}
-                            className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 flex items-center gap-1"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, equip, 'equipment', crew.crewNumber)}
+                            onDragEnd={handleDragEnd}
+                            className={`
+                              text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5
+                              cursor-grab active:cursor-grabbing select-none
+                              bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200
+                              ${draggedItem && (draggedItem as Equipment).name === equip.name ? 'opacity-50' : ''}
+                            `}
                           >
                             {equip.name}
                             <button
-                              onClick={() => removeFromCrew(crew.crewNumber, equip.name, 'equipment')}
-                              className="hover:opacity-75"
+                              onClick={(e) => { e.stopPropagation(); removeFromCrew(crew.crewNumber, equip.name, 'equipment'); }}
+                              className="hover:opacity-75 ml-0.5"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-2.5 w-2.5" />
                             </button>
                           </div>
                         ))}
                         {crew.equipment.length === 0 && (
-                          <span className="text-xs text-muted-foreground">Drop equipment here</span>
+                          <span className="text-[10px] text-muted-foreground italic">Drop equip</span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Job Input */}
+                  {/* Job Input - Compact */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" /> Job / Location
+                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-0.5">
+                      <MapPin className="h-2.5 w-2.5" /> Job
                     </p>
                     <input
                       type="text"
-                      placeholder="Enter job name..."
+                      placeholder="Job name..."
                       value={crew.jobs[0] || ''}
                       onChange={(e) => updateCrewJob(crew.crewNumber, e.target.value)}
-                      className="w-full text-xs p-2 rounded border bg-background"
+                      className="w-full text-[10px] p-1 rounded border bg-background"
                     />
                   </div>
 
-                  {/* Salesman/PM */}
+                  {/* Salesman/PM - Compact */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Salesman / PM</p>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">PM</p>
                     <input
                       type="text"
-                      placeholder="Enter salesman..."
+                      placeholder="Salesman..."
                       value={crew.salesman}
                       onChange={(e) => updateCrewSalesman(crew.crewNumber, e.target.value)}
-                      className="w-full text-xs p-2 rounded border bg-background"
+                      className="w-full text-[10px] p-1 rounded border bg-background"
                     />
                   </div>
                 </CardContent>
@@ -994,29 +1054,29 @@ export default function SchedulerPage() {
         </div>
       </div>
 
-      {/* Legend */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 rounded-full bg-primary text-primary-foreground">CL</span>
-              <span>Crew Leader</span>
+      {/* Legend - Compact */}
+      <Card className="py-1">
+        <CardContent className="p-2">
+          <div className="flex flex-wrap gap-3 text-[10px]">
+            <div className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">CL</span>
+              <span className="text-muted-foreground">Crew Leader</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 rounded-full bg-secondary text-secondary-foreground">M</span>
-              <span>Manager</span>
+            <div className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground">M</span>
+              <span className="text-muted-foreground">Manager</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground">Name</span>
-              <span>Team Member</span>
+            <div className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Name</span>
+              <span className="text-muted-foreground">Team</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Truck</span>
-              <span>Vehicle</span>
+            <div className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Truck</span>
+              <span className="text-muted-foreground">Vehicle</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Equipment</span>
-              <span>Machine/Trailer</span>
+            <div className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Equip</span>
+              <span className="text-muted-foreground">Machine</span>
             </div>
           </div>
         </CardContent>
